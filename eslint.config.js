@@ -43,7 +43,8 @@ export default tseslint.config(
               message: "src/core/ must not import from outside src/core/.",
             },
             {
-              group: ["*", "!./*", "!../*", "!../../*", "!../../../*"],
+              // Anything that does not start with "." is a bare package or absolute specifier.
+              regex: "^[^.]",
               message:
                 "src/core/ must not import packages; only relative imports within src/core/ are allowed.",
             },
