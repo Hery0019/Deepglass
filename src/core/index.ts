@@ -7,3 +7,6 @@
 
 export * from "./rng";
 export * from "./grid";
+export * from "./map/tiles";
+export * from "./map/dungeon";
+export * from "./map/generate";
