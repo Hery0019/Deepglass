@@ -7,6 +7,10 @@
 
 export * from "./rng";
 export * from "./grid";
+export * from "./types";
+export * from "./entity";
 export * from "./map/tiles";
 export * from "./map/dungeon";
 export * from "./map/generate";
+export * from "./systems/movement";
+export * from "./turn";
