@@ -9,6 +9,7 @@
 import { getPlayer } from "./entity";
 import { generateMap } from "./map/generate";
 import { type RngState, seedRng } from "./rng";
+import { PLAYER_SIGHT_RADIUS, updateVisibility } from "./systems/fov";
 import { moveEntity } from "./systems/movement";
 import type { Action, Entity, GameEvent, GameState, LogEntry, TurnResult } from "./types";
 
@@ -17,9 +18,7 @@ export const PLAYER_ID = 1;
 export function createGame(seed: number): GameState {
   const rng: RngState = seedRng(seed);
   const generated = generateMap(rng);
-  // Field of view arrives in a later phase; until then the whole level is revealed.
-  const revealed = new Array<boolean>(generated.map.width * generated.map.height).fill(true);
-  const map = { ...generated.map, visible: revealed, explored: revealed };
+  const map = updateVisibility(generated.map, generated.map.spawn, PLAYER_SIGHT_RADIUS);
   const player: Entity = {
     id: PLAYER_ID,
     kind: "player",
@@ -85,6 +84,12 @@ function resolvePlayerAction(
   }
 }
 
+/** Recompute the player's field of view after everything has moved. */
+function refreshPlayerVision(state: GameState): GameState {
+  const player = getPlayer(state);
+  return { ...state, map: updateVisibility(state.map, player.position, PLAYER_SIGHT_RADIUS) };
+}
+
 export function applyAction(state: GameState, action: Action): TurnResult {
   if (state.status !== "playing") {
     return { state, events: [] };
@@ -100,5 +105,6 @@ export function applyAction(state: GameState, action: Action): TurnResult {
   }
 
   next = { ...next, turn: next.turn + 1 };
+  next = refreshPlayerVision(next);
   return { state: appendLog(next, events), events };
 }
