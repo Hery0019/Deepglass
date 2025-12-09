@@ -16,6 +16,7 @@ export * from "./data/monsters";
 export * from "./systems/movement";
 export * from "./systems/fov";
 export * from "./systems/combat";
+export * from "./systems/pathfinding";
 export * from "./systems/ai";
 export * from "./messages";
 export * from "./level";

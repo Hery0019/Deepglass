@@ -26,13 +26,22 @@ export type AttackComponent = {
   readonly accuracy: number;
 };
 
+export type RangedAttackComponent = AttackComponent & {
+  /** Maximum Chebyshev distance at which the attack can be used. */
+  readonly range: number;
+};
+
 /** How a monster decides what to do each turn. Implemented in systems/ai.ts. */
-export type AiBehaviour = "chaser";
+export type AiBehaviour = "chaser" | "ranged" | "erratic" | "ambusher" | "fleeing" | "boss";
 
 export type AiComponent = {
   readonly behaviour: AiBehaviour;
   /** Where the monster last saw the player; it heads there when it loses sight. */
   readonly lastKnownPlayerPosition?: Point;
+  /** Set once an ambusher has been triggered. */
+  readonly alerted?: boolean;
+  /** Set while a fleeing monster is retreating. */
+  readonly fleeing?: boolean;
 };
 
 export type ExperienceComponent = {
@@ -51,8 +60,17 @@ export type Entity = {
   readonly blocksMovement: boolean;
   readonly health?: HealthComponent;
   readonly attack?: AttackComponent;
+  readonly rangedAttack?: RangedAttackComponent;
   readonly defence?: number;
   readonly ai?: AiComponent;
+  /** Behaviour tuning for "fleeing" monsters: fraction of max health that triggers retreat. */
+  readonly fleeThreshold?: number;
+  /** Behaviour tuning for "ranged" monsters: distance they try to keep. */
+  readonly preferredRange?: number;
+  /** Behaviour tuning for "erratic" monsters: probability of a random move. */
+  readonly erraticChance?: number;
+  /** Killing this entity wins the game. */
+  readonly isBoss?: boolean;
   /** Experience awarded to the player for killing this entity. */
   readonly xpValue?: number;
   readonly experience?: ExperienceComponent;
@@ -106,8 +124,14 @@ export type GameEvent =
       readonly attackerId: EntityId;
       readonly defenderId: EntityId;
       readonly damage: number;
+      readonly ranged: boolean;
     }
-  | { readonly type: "attack-missed"; readonly attackerId: EntityId; readonly defenderId: EntityId }
+  | {
+      readonly type: "attack-missed";
+      readonly attackerId: EntityId;
+      readonly defenderId: EntityId;
+      readonly ranged: boolean;
+    }
   | { readonly type: "entity-died"; readonly entityId: EntityId; readonly killerId?: EntityId }
   | { readonly type: "message"; readonly text: string; readonly tone: LogTone };
 

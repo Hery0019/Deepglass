@@ -24,6 +24,10 @@ export default tseslint.config(
       "@typescript-eslint/consistent-type-definitions": ["error", "type"],
       "@typescript-eslint/switch-exhaustiveness-check": "error",
       "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { ignoreRestSiblings: true, argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
   {

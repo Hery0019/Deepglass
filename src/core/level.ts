@@ -5,7 +5,7 @@
 
 import { type Point, pointKey, rectCenter } from "./grid";
 import { generateMap } from "./map/generate";
-import { MONSTER_LIST, type MonsterDef } from "./data/monsters";
+import { BOSS_ID, MONSTERS, MONSTER_LIST, type MonsterDef } from "./data/monsters";
 import { type RngState, nextInt, pickWeighted } from "./rng";
 import type { DungeonMap, Entity } from "./index";
 
@@ -31,12 +31,17 @@ export function monsterFromDef(def: MonsterDef, position: Point): Omit<Entity, "
     ai: { behaviour: def.behaviour },
     sightRadius: def.sightRadius,
     xpValue: def.xpValue,
+    ...(def.ranged !== undefined ? { rangedAttack: def.ranged } : {}),
+    ...(def.fleeThreshold !== undefined ? { fleeThreshold: def.fleeThreshold } : {}),
+    ...(def.preferredRange !== undefined ? { preferredRange: def.preferredRange } : {}),
+    ...(def.erraticChance !== undefined ? { erraticChance: def.erraticChance } : {}),
+    ...(def.id === BOSS_ID ? { isBoss: true } : {}),
   };
 }
 
-/** Monsters eligible at a depth, as a weighted table. */
+/** Monsters eligible for random spawning at a depth, as a weighted table. */
 export function spawnTableForDepth(depth: number): readonly MonsterDef[] {
-  return MONSTER_LIST.filter((m) => depth >= m.minDepth && depth <= m.maxDepth);
+  return MONSTER_LIST.filter((m) => m.weight > 0 && depth >= m.minDepth && depth <= m.maxDepth);
 }
 
 /** Number of monsters to place on a level, growing with depth. */
@@ -78,6 +83,20 @@ function randomRoomTile(
   return { rng: state, position: null };
 }
 
+function farthestRoomCenter(map: DungeonMap): Point | null {
+  let best: Point | null = null;
+  let bestDistance = -1;
+  for (const room of map.rooms) {
+    const c = rectCenter(room);
+    const d = Math.max(Math.abs(c.x - map.spawn.x), Math.abs(c.y - map.spawn.y));
+    if (d > bestDistance) {
+      bestDistance = d;
+      best = c;
+    }
+  }
+  return best;
+}
+
 export function createLevel(rng: RngState, depth: number): LevelResult {
   const generated = generateMap(rng, { withStairsDown: depth < FINAL_DEPTH });
   const map = generated.map;
@@ -94,6 +113,15 @@ export function createLevel(rng: RngState, depth: number): LevelResult {
 
   const table = spawnTableForDepth(depth);
   const monsters: Omit<Entity, "id">[] = [];
+
+  // The boss guards the room farthest from the entrance on the final level.
+  if (depth >= FINAL_DEPTH) {
+    const lair = farthestRoomCenter(map);
+    if (lair !== null) {
+      taken.add(pointKey(lair));
+      monsters.push(monsterFromDef(MONSTERS[BOSS_ID], lair));
+    }
+  }
   if (table.length > 0) {
     const range = monsterCountForDepth(depth);
     const count = nextInt(state, range.min, range.max);

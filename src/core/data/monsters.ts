@@ -1,11 +1,13 @@
 /**
  * Monster table. Adding a monster means adding an entry here; no system
- * code should need to change.
+ * code should need to change. Behaviours are implemented in systems/ai.ts
+ * and parameterized by the optional fields below.
  */
 
 import type { AiBehaviour } from "../types";
 
-export type MonsterId = "rat";
+export type MonsterId =
+  "rat" | "bat" | "kobold" | "goblin-archer" | "cave-spider" | "orc" | "wraith" | "ogre" | "warden";
 
 export type MonsterDef = {
   readonly id: MonsterId;
@@ -23,8 +25,21 @@ export type MonsterDef = {
   /** Depth range (inclusive) in which this monster can appear. */
   readonly minDepth: number;
   readonly maxDepth: number;
-  /** Relative spawn weight within its depth range. */
+  /** Relative spawn weight within its depth range. 0 means never spawned randomly. */
   readonly weight: number;
+  /** Ranged attack, for behaviours that shoot. */
+  readonly ranged?: {
+    readonly min: number;
+    readonly max: number;
+    readonly accuracy: number;
+    readonly range: number;
+  };
+  /** Fraction of max health below which a "fleeing" monster retreats. */
+  readonly fleeThreshold?: number;
+  /** Distance a ranged attacker tries to keep from the player. */
+  readonly preferredRange?: number;
+  /** Probability per turn that an "erratic" monster moves randomly instead of acting. */
+  readonly erraticChance?: number;
 };
 
 export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
@@ -42,9 +57,155 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     sightRadius: 7,
     xpValue: 3,
     minDepth: 1,
+    maxDepth: 3,
+    weight: 12,
+  },
+  bat: {
+    id: "bat",
+    name: "cave bat",
+    glyph: "b",
+    color: "#9a7fd1",
+    health: 4,
+    attackMin: 1,
+    attackMax: 2,
+    accuracy: 0.7,
+    defence: 0,
+    behaviour: "erratic",
+    sightRadius: 8,
+    xpValue: 2,
+    minDepth: 1,
+    maxDepth: 5,
+    weight: 10,
+    erraticChance: 0.6,
+  },
+  kobold: {
+    id: "kobold",
+    name: "kobold",
+    glyph: "k",
+    color: "#d17f5c",
+    health: 8,
+    attackMin: 2,
+    attackMax: 4,
+    accuracy: 0.75,
+    defence: 0,
+    behaviour: "fleeing",
+    sightRadius: 8,
+    xpValue: 5,
+    minDepth: 2,
+    maxDepth: 5,
+    weight: 8,
+    fleeThreshold: 0.4,
+  },
+  "goblin-archer": {
+    id: "goblin-archer",
+    name: "goblin archer",
+    glyph: "g",
+    color: "#7fbf5c",
+    health: 7,
+    attackMin: 1,
+    attackMax: 3,
+    accuracy: 0.7,
+    defence: 0,
+    behaviour: "ranged",
+    sightRadius: 8,
+    xpValue: 6,
+    minDepth: 2,
+    maxDepth: 7,
+    weight: 8,
+    ranged: { min: 2, max: 4, accuracy: 0.7, range: 6 },
+    preferredRange: 4,
+  },
+  "cave-spider": {
+    id: "cave-spider",
+    name: "cave spider",
+    glyph: "s",
+    color: "#c9c9c9",
+    health: 9,
+    attackMin: 2,
+    attackMax: 5,
+    accuracy: 0.85,
+    defence: 1,
+    behaviour: "ambusher",
+    sightRadius: 6,
+    xpValue: 8,
+    minDepth: 3,
+    maxDepth: 8,
+    weight: 7,
+  },
+  orc: {
+    id: "orc",
+    name: "orc",
+    glyph: "o",
+    color: "#5f9e4a",
+    health: 16,
+    attackMin: 3,
+    attackMax: 7,
+    accuracy: 0.8,
+    defence: 1,
+    behaviour: "chaser",
+    sightRadius: 8,
+    xpValue: 12,
+    minDepth: 4,
     maxDepth: 9,
     weight: 10,
+  },
+  wraith: {
+    id: "wraith",
+    name: "wraith",
+    glyph: "W",
+    color: "#7fd1d1",
+    health: 14,
+    attackMin: 3,
+    attackMax: 6,
+    accuracy: 0.8,
+    defence: 2,
+    behaviour: "ranged",
+    sightRadius: 9,
+    xpValue: 16,
+    minDepth: 6,
+    maxDepth: 9,
+    weight: 6,
+    ranged: { min: 3, max: 6, accuracy: 0.75, range: 5 },
+    preferredRange: 3,
+  },
+  ogre: {
+    id: "ogre",
+    name: "ogre",
+    glyph: "O",
+    color: "#c97a3a",
+    health: 30,
+    attackMin: 5,
+    attackMax: 11,
+    accuracy: 0.7,
+    defence: 2,
+    behaviour: "chaser",
+    sightRadius: 7,
+    xpValue: 25,
+    minDepth: 6,
+    maxDepth: 9,
+    weight: 5,
+  },
+  warden: {
+    id: "warden",
+    name: "Warden of the Deepglass",
+    glyph: "D",
+    color: "#e8d44d",
+    health: 70,
+    attackMin: 6,
+    attackMax: 12,
+    accuracy: 0.85,
+    defence: 3,
+    behaviour: "boss",
+    sightRadius: 12,
+    xpValue: 100,
+    minDepth: 9,
+    maxDepth: 9,
+    weight: 0,
+    ranged: { min: 4, max: 8, accuracy: 0.8, range: 6 },
   },
 };
 
 export const MONSTER_LIST: readonly MonsterDef[] = Object.values(MONSTERS);
+
+/** The monster placed on the final level; the run is won when it dies. */
+export const BOSS_ID: MonsterId = "warden";
