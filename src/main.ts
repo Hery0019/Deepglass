@@ -5,9 +5,10 @@
  */
 
 import { GRID_HEIGHT, GRID_WIDTH, type GameState, applyAction, createGame } from "./core/index";
-import { keyToCommand } from "./input/keyboard";
-import { HUD_ROWS, createRenderer, render } from "./render/renderer";
+import { type UiMode, keyToCommand } from "./input/keyboard";
+import { HUD_ROWS, type Renderer, createRenderer, render } from "./render/renderer";
 import { drawHud } from "./ui/hud";
+import { drawInventory } from "./ui/inventory";
 
 function readSeed(): number {
   const params = new URLSearchParams(window.location.search);
@@ -31,6 +32,11 @@ function computeCellSize(): { readonly width: number; readonly height: number } 
   return { width: cellWidth, height: Math.min(cellHeight, Math.floor(cellWidth / 0.6)) };
 }
 
+function buildRenderer(canvas: HTMLCanvasElement): Renderer {
+  const cell = computeCellSize();
+  return createRenderer(canvas, GRID_WIDTH, GRID_HEIGHT, cell.width, cell.height);
+}
+
 function main(): void {
   const canvas = document.getElementById("game");
   if (!(canvas instanceof HTMLCanvasElement)) {
@@ -38,32 +44,43 @@ function main(): void {
   }
 
   let state: GameState = createGame(readSeed());
-  let renderer = (() => {
-    const cell = computeCellSize();
-    return createRenderer(canvas, GRID_WIDTH, GRID_HEIGHT, cell.width, cell.height);
-  })();
+  let mode: UiMode = "play";
+  let renderer = buildRenderer(canvas);
+
+  const drawOverlay = (r: Renderer, s: GameState): void => {
+    drawHud(r, s);
+    if (mode === "inventory" || mode === "drop") {
+      drawInventory(r, s, mode === "drop");
+    }
+  };
 
   const draw = (): void => {
-    render(renderer, state, drawHud);
+    render(renderer, state, drawOverlay);
   };
 
   window.addEventListener("resize", () => {
-    const cell = computeCellSize();
-    renderer = createRenderer(canvas, GRID_WIDTH, GRID_HEIGHT, cell.width, cell.height);
+    renderer = buildRenderer(canvas);
     draw();
   });
 
   window.addEventListener("keydown", (event) => {
-    const command = keyToCommand(event.key);
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+    const command = keyToCommand(event.key, mode);
     if (command === null) {
       return;
     }
     event.preventDefault();
-    if (command.kind === "action") {
+    if (command.kind === "ui") {
+      mode = command.command.type === "open" ? command.command.mode : "play";
+    } else {
       const result = applyAction(state, command.action);
       state = result.state;
-      draw();
+      // Any action taken from an overlay closes it.
+      mode = "play";
     }
+    draw();
   });
 
   draw();

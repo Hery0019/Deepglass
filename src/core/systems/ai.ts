@@ -24,6 +24,7 @@ import { meleeAttack, rangedAttack } from "./combat";
 import { hasLineOfSight } from "./fov";
 import { tryMove } from "./movement";
 import { findPath } from "./pathfinding";
+import { isMovementScrambled } from "./status";
 
 export type AiResult = {
   readonly state: GameState;
@@ -313,6 +314,9 @@ const BEHAVIOURS: Readonly<Record<AiBehaviour, (state: GameState, monster: Entit
 export function runMonsterTurn(state: GameState, monster: Entity): AiResult {
   if (monster.ai === undefined) {
     return IDLE(state);
+  }
+  if (isMovementScrambled(monster)) {
+    return stepRandomly(state, monster);
   }
   return BEHAVIOURS[monster.ai.behaviour](state, monster);
 }

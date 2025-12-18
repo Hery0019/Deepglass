@@ -1,15 +1,17 @@
 /**
  * Keyboard mapping: translates KeyboardEvent keys into game Actions or
- * UI commands. Contains no game logic.
+ * UI commands, depending on which overlay (if any) is open. Contains no
+ * game logic.
  */
 
 import type { Action, Point } from "../core/index";
 
-/** Commands that affect the client (overlays, new game) rather than the game state. */
+/** Which screen currently has the keyboard. Owned by the client, not the game state. */
+export type UiMode = "play" | "inventory" | "drop" | "help";
+
+/** Commands that affect the client (overlays) rather than the game state. */
 export type UiCommand =
-  | { readonly type: "toggle-help" }
-  | { readonly type: "toggle-inventory" }
-  | { readonly type: "close-overlay" };
+  { readonly type: "open"; readonly mode: Exclude<UiMode, "play"> } | { readonly type: "close" };
 
 export type InputCommand =
   | { readonly kind: "action"; readonly action: Action }
@@ -34,8 +36,18 @@ const MOVEMENT_KEYS: Readonly<Record<string, Point>> = {
   PageDown: { x: 1, y: 1 },
 };
 
-/** Map a key to a command, or null if the key is unbound. */
-export function keyToCommand(key: string): InputCommand | null {
+/** Letters that address inventory slots, in slot order. */
+export const SLOT_KEYS = "abcdefghij";
+
+function slotFromKey(key: string): number | null {
+  if (key.length !== 1) {
+    return null;
+  }
+  const index = SLOT_KEYS.indexOf(key.toLowerCase());
+  return index === -1 ? null : index;
+}
+
+function playModeCommand(key: string): InputCommand | null {
   const direction = MOVEMENT_KEYS[key];
   if (direction !== undefined) {
     return { kind: "action", action: { type: "move", direction } };
@@ -44,13 +56,44 @@ export function keyToCommand(key: string): InputCommand | null {
     case ".":
     case "s":
       return { kind: "action", action: { type: "wait" } };
-    case "?":
-      return { kind: "ui", command: { type: "toggle-help" } };
+    case "g":
+    case ",":
+      return { kind: "action", action: { type: "pick-up" } };
     case "i":
-      return { kind: "ui", command: { type: "toggle-inventory" } };
-    case "Escape":
-      return { kind: "ui", command: { type: "close-overlay" } };
+      return { kind: "ui", command: { type: "open", mode: "inventory" } };
+    case "d":
+      return { kind: "ui", command: { type: "open", mode: "drop" } };
+    case "?":
+      return { kind: "ui", command: { type: "open", mode: "help" } };
     default:
       return null;
+  }
+}
+
+/** Map a key to a command for the current mode, or null if the key is unbound. */
+export function keyToCommand(key: string, mode: UiMode): InputCommand | null {
+  if (mode === "play") {
+    return playModeCommand(key);
+  }
+  if (key === "Escape") {
+    return { kind: "ui", command: { type: "close" } };
+  }
+  switch (mode) {
+    case "help":
+      return key === "?" ? { kind: "ui", command: { type: "close" } } : null;
+    case "inventory": {
+      if (key === "i") {
+        return { kind: "ui", command: { type: "close" } };
+      }
+      const slot = slotFromKey(key);
+      return slot === null ? null : { kind: "action", action: { type: "use-item", slot } };
+    }
+    case "drop": {
+      if (key === "d") {
+        return { kind: "ui", command: { type: "close" } };
+      }
+      const slot = slotFromKey(key);
+      return slot === null ? null : { kind: "action", action: { type: "drop-item", slot } };
+    }
   }
 }
