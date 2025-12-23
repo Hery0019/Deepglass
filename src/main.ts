@@ -7,6 +7,7 @@
 import { GRID_HEIGHT, GRID_WIDTH, type GameState, applyAction, createGame } from "./core/index";
 import { type UiMode, keyToCommand } from "./input/keyboard";
 import { HUD_ROWS, type Renderer, createRenderer, render } from "./render/renderer";
+import { drawEndScreen } from "./ui/endscreen";
 import { drawHud } from "./ui/hud";
 import { drawInventory } from "./ui/inventory";
 
@@ -52,6 +53,7 @@ function main(): void {
     if (mode === "inventory" || mode === "drop") {
       drawInventory(r, s, mode === "drop");
     }
+    drawEndScreen(r, s);
   };
 
   const draw = (): void => {

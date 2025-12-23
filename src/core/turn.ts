@@ -7,8 +7,8 @@
  */
 
 import { blockingEntityAt, getPlayer, spawnEntity } from "./entity";
-import { DIRECTIONS_8, addPoints } from "./grid";
-import { createLevel } from "./level";
+import { DIRECTIONS_8, addPoints, pointsEqual } from "./grid";
+import { FINAL_DEPTH, createLevel } from "./level";
 import { describeEvent } from "./messages";
 import { type RngState, pick, seedRng } from "./rng";
 import { runMonsterTurn } from "./systems/ai";
@@ -16,6 +16,7 @@ import { meleeAttack } from "./systems/combat";
 import { PLAYER_SIGHT_RADIUS, updateVisibility } from "./systems/fov";
 import { INVENTORY_CAPACITY, dropItem, pickUp, useItem } from "./systems/items";
 import { moveEntity } from "./systems/movement";
+import { applyLevelUps } from "./systems/progression";
 import { isMovementScrambled, tickAllStatuses } from "./systems/status";
 import type { Action, Entity, GameEvent, GameState, LogEntry, TurnResult } from "./types";
 
@@ -68,7 +69,7 @@ export function createGame(seed: number): GameState {
     nextItemId: level.nextItemId,
     log: [{ turn: 0, text: "You descend into the dungeon.", tone: "system" }],
     status: "playing",
-    stats: { kills: 0 },
+    stats: { kills: 0, maxDepth: 1 },
   };
   for (const monster of level.monsters) {
     state = spawnEntity(state, monster).state;
@@ -125,12 +126,45 @@ function resolveMove(state: GameState, requested: Entity["position"]): PhaseResu
   return { state: result.state, events: result.events, tookTurn: moved || scrambled };
 }
 
+/**
+ * Take the stairs. Builds the next level from the current RNG, carries the
+ * player over with pack and wounds intact, and discards everything else.
+ */
+export function descend(state: GameState): PhaseResult {
+  const player = getPlayer(state);
+  const stairs = state.map.stairsDown;
+  if (stairs === undefined || !pointsEqual(player.position, stairs)) {
+    return { state, events: [{ type: "no-stairs-here" }], tookTurn: false };
+  }
+  const depth = Math.min(FINAL_DEPTH, state.depth + 1);
+  const level = createLevel(state.rng, depth, state.nextItemId);
+  const map = updateVisibility(level.map, level.map.spawn, PLAYER_SIGHT_RADIUS);
+  let next: GameState = {
+    ...state,
+    rng: level.rng,
+    depth,
+    map,
+    entities: [{ ...player, position: map.spawn }],
+    nextItemId: level.nextItemId,
+    stats: { ...state.stats, maxDepth: Math.max(state.stats.maxDepth, depth) },
+  };
+  for (const monster of level.monsters) {
+    next = spawnEntity(next, monster).state;
+  }
+  for (const item of level.items) {
+    next = spawnEntity(next, item).state;
+  }
+  return { state: next, events: [{ type: "level-descended", depth }], tookTurn: true };
+}
+
 function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
   switch (action.type) {
     case "move":
       return resolveMove(state, action.direction);
     case "wait":
       return { state, events: [], tookTurn: true };
+    case "descend":
+      return descend(state);
     case "pick-up":
       return pickUp(state);
     case "use-item":
@@ -189,6 +223,13 @@ export function applyAction(state: GameState, action: Action): TurnResult {
     const statusPhase = tickAllStatuses(next);
     next = statusPhase.state;
     events.push(...statusPhase.events);
+  }
+
+  // Experience earned this turn may raise the player's level, even on the winning blow.
+  if (next.status !== "dead") {
+    const levelled = applyLevelUps(next);
+    next = levelled.state;
+    events.push(...levelled.events);
   }
 
   next = { ...next, turn: next.turn + 1 };

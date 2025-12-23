@@ -128,6 +128,8 @@ export type GameStatus = "playing" | "dead" | "won";
 
 export type RunStats = {
   readonly kills: number;
+  /** Deepest level reached during the run. */
+  readonly maxDepth: number;
 };
 
 export type GameState = {
@@ -150,6 +152,7 @@ export type GameState = {
 export type Action =
   | { readonly type: "move"; readonly direction: Point }
   | { readonly type: "wait" }
+  | { readonly type: "descend" }
   | { readonly type: "pick-up" }
   /** Use a consumable or toggle equipment in the given inventory slot. */
   | { readonly type: "use-item"; readonly slot: number }
@@ -195,6 +198,10 @@ export type GameEvent =
   | { readonly type: "nothing-here"; readonly entityId: EntityId }
   | { readonly type: "status-applied"; readonly entityId: EntityId; readonly status: StatusId }
   | { readonly type: "status-expired"; readonly entityId: EntityId; readonly status: StatusId }
+  | { readonly type: "level-descended"; readonly depth: number }
+  | { readonly type: "no-stairs-here" }
+  | { readonly type: "player-levelled-up"; readonly level: number }
+  | { readonly type: "game-won" }
   | { readonly type: "message"; readonly text: string; readonly tone: LogTone };
 
 export type TurnResult = {
