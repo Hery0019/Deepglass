@@ -8,19 +8,29 @@ import { GRID_HEIGHT, GRID_WIDTH, type GameState, applyAction, createGame } from
 import { type UiMode, keyToCommand } from "./input/keyboard";
 import { HUD_ROWS, type Renderer, createRenderer, render } from "./render/renderer";
 import { drawEndScreen } from "./ui/endscreen";
+import { drawHelp } from "./ui/help";
 import { drawHud } from "./ui/hud";
 import { drawInventory } from "./ui/inventory";
 
-function readSeed(): number {
+/**
+ * Read the seed from `?seed=` if present, otherwise derive one from the
+ * clock. Either way the URL is updated so the run can be shared or replayed.
+ */
+function resolveSeed(): number {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get("seed");
+  let seed: number | null = null;
   if (raw !== null) {
     const parsed = Number.parseInt(raw, 10);
     if (Number.isFinite(parsed)) {
-      return parsed >>> 0;
+      seed = parsed >>> 0;
     }
   }
-  return Date.now() >>> 0;
+  seed ??= Date.now() >>> 0;
+  params.set("seed", String(seed));
+  const url = `${window.location.pathname}?${params.toString()}`;
+  window.history.replaceState(null, "", url);
+  return seed;
 }
 
 function computeCellSize(): { readonly width: number; readonly height: number } {
@@ -44,7 +54,7 @@ function main(): void {
     throw new Error("Canvas element #game not found.");
   }
 
-  let state: GameState = createGame(readSeed());
+  let state: GameState = createGame(resolveSeed());
   let mode: UiMode = "play";
   let renderer = buildRenderer(canvas);
 
@@ -52,6 +62,8 @@ function main(): void {
     drawHud(r, s);
     if (mode === "inventory" || mode === "drop") {
       drawInventory(r, s, mode === "drop");
+    } else if (mode === "help") {
+      drawHelp(r);
     }
     drawEndScreen(r, s);
   };
