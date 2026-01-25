@@ -12,7 +12,15 @@
         background: #000;
         color: #ccc;
         font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace;
-        overflow: hidden;
+      }
+      html {
+        /* The canvas may outgrow the window when zoomed in; the viewport scrolls in both axes. */
+        overflow: auto;
+      }
+      body {
+        /* Size the body to its content so horizontal overflow reaches the viewport scroller. */
+        width: max-content;
+        min-width: 100%;
       }
       #game {
         display: block;

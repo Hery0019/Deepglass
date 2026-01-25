@@ -11,7 +11,9 @@ export type UiMode = "play" | "inventory" | "drop" | "help";
 
 /** Commands that affect the client (overlays) rather than the game state. */
 export type UiCommand =
-  { readonly type: "open"; readonly mode: Exclude<UiMode, "play"> } | { readonly type: "close" };
+  | { readonly type: "open"; readonly mode: Exclude<UiMode, "play"> }
+  | { readonly type: "close" }
+  | { readonly type: "zoom"; readonly direction: "in" | "out" | "reset" };
 
 export type InputCommand =
   | { readonly kind: "action"; readonly action: Action }
@@ -67,6 +69,14 @@ function playModeCommand(key: string): InputCommand | null {
       return { kind: "ui", command: { type: "open", mode: "drop" } };
     case "?":
       return { kind: "ui", command: { type: "open", mode: "help" } };
+    case "+":
+    case "=":
+      return { kind: "ui", command: { type: "zoom", direction: "in" } };
+    case "-":
+    case "_":
+      return { kind: "ui", command: { type: "zoom", direction: "out" } };
+    case "0":
+      return { kind: "ui", command: { type: "zoom", direction: "reset" } };
     default:
       return null;
   }

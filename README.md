@@ -56,17 +56,19 @@ npm run typecheck  # tsc --noEmit
 You are `@`. Walk into a monster to attack it. Every action you take gives every
 monster on the level one action in return.
 
-| Key                         | Effect                                                             |
-| --------------------------- | ------------------------------------------------------------------ |
-| Arrow keys, `h` `j` `k` `l` | Move west / south / north / east                                   |
-| `y` `u` `b` `n`             | Move diagonally (north-west, north-east, south-west, south-east)   |
-| `.` or `s`                  | Wait one turn                                                      |
-| `>`                         | Descend the stairs when standing on `>`                            |
-| `g` or `,`                  | Pick up the item under you                                         |
-| `i`                         | Open your pack, then press a slot letter (`a`–`j`) to use or equip |
-| `d`                         | Drop an item: press `d`, then the slot letter                      |
-| `?`                         | Toggle the help screen                                             |
-| `Esc`                       | Close any overlay                                                  |
+| Key                         | Effect                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| Arrow keys, `h` `j` `k` `l` | Move west / south / north / east                                                  |
+| `y` `u` `b` `n`             | Move diagonally (north-west, north-east, south-west, south-east)                  |
+| `.` or `s`                  | Wait one turn                                                                     |
+| `>`                         | Descend the stairs when standing on `>`                                           |
+| `g` or `,`                  | Pick up the item under you                                                        |
+| `i`                         | Open your pack, then press a slot letter (`a`–`j`) to use or equip                |
+| `d`                         | Drop an item: press `d`, then the slot letter                                     |
+| `?`                         | Toggle the help screen                                                            |
+| `+` / `-`                   | Zoom in / out; when the canvas outgrows the window the page scrolls to follow you |
+| `0`                         | Reset zoom                                                                        |
+| `Esc`                       | Close any overlay                                                                 |
 
 Glyphs: `#` wall, `.` floor, `>` stairs down, `!` potion, `?` scroll, `)` weapon,
 `[` armour. Letters are monsters. Tiles you have seen but cannot currently see
