@@ -1,5 +1,7 @@
 # Deepglass
 
+[![CI](https://github.com/Hery0019/Deepglass/actions/workflows/ci.yml/badge.svg)](https://github.com/Hery0019/Deepglass/actions/workflows/ci.yml)
+
 A turn-based ASCII roguelike for the desktop browser. Descend eight procedurally
 generated levels, reach the ninth, and kill the Warden of the Deepglass. Death is
 permanent: there is no saving and no continuing.
@@ -29,6 +31,13 @@ dies to the Warden.
 | Victory (seed 7)                                                                 | Death (seed 20)                                                        |
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | ![The victory summary after killing the Warden](docs/screenshots/07-victory.png) | ![The death summary on the final level](docs/screenshots/08-death.png) |
+
+## Playing it
+
+The latest build on `main` is deployed to GitHub Pages at
+<https://hery0019.github.io/Deepglass/>. Every push to `main` that passes lint,
+typecheck, tests, and build is published there by the CI workflow in
+`.github/workflows/ci.yml`.
 
 ## Running it
 
