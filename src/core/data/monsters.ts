@@ -14,6 +14,8 @@ export type MonsterDef = {
   readonly name: string;
   readonly glyph: string;
   readonly color: string;
+  /** One line shown by the examine command. Says what the monster does, not its numbers. */
+  readonly description: string;
   readonly health: number;
   readonly attackMin: number;
   readonly attackMax: number;
@@ -50,6 +52,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "giant rat",
     glyph: "r",
     color: "#b08d5b",
+    description: "A mangy rodent the size of a dog. It comes straight at you.",
     health: 5,
     attackMin: 1,
     attackMax: 3,
@@ -67,6 +70,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "cave bat",
     glyph: "b",
     color: "#9a7fd1",
+    description: "It flits about at random; its bite can leave you confused.",
     health: 4,
     attackMin: 1,
     attackMax: 2,
@@ -86,6 +90,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "kobold",
     glyph: "k",
     color: "#d17f5c",
+    description: "A cowardly scavenger. It runs when hurt, recovers, and comes back.",
     health: 8,
     attackMin: 2,
     attackMax: 4,
@@ -104,6 +109,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "goblin archer",
     glyph: "g",
     color: "#7fbf5c",
+    description: "Keeps its distance and shoots. Corner it to make it fight.",
     health: 7,
     attackMin: 1,
     attackMax: 3,
@@ -123,6 +129,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "cave spider",
     glyph: "s",
     color: "#c9c9c9",
+    description: "Lies still until you step beside it. Its bite is poisonous.",
     health: 9,
     attackMin: 2,
     attackMax: 5,
@@ -141,6 +148,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "orc",
     glyph: "o",
     color: "#5f9e4a",
+    description: "A brutish warrior that charges on sight and hits hard.",
     health: 16,
     attackMin: 3,
     attackMax: 7,
@@ -158,6 +166,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "wraith",
     glyph: "W",
     color: "#7fd1d1",
+    description: "A drifting shade that drains you from afar and avoids your reach.",
     health: 14,
     attackMin: 3,
     attackMax: 6,
@@ -177,6 +186,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "ogre",
     glyph: "O",
     color: "#c97a3a",
+    description: "Slow-witted and enormous. Every blow it lands is a bad one.",
     health: 26,
     attackMin: 4,
     attackMax: 9,
@@ -194,6 +204,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     name: "Warden of the Deepglass",
     glyph: "D",
     color: "#e8d44d",
+    description: "The keeper of the Deepglass. It hurls shards and never retreats.",
     health: 50,
     attackMin: 5,
     attackMax: 10,

@@ -6,7 +6,7 @@
 import { STATUS_EFFECTS } from "./data/effects";
 import { ITEMS } from "./data/items";
 import { findEntity } from "./entity";
-import type { GameEvent, GameState, LogEntry, LogTone } from "./types";
+import type { AutoRefusal, GameEvent, GameState, LogEntry, LogTone } from "./types";
 
 function nameOf(state: GameState, id: number): string {
   if (id === state.playerId) {
@@ -17,6 +17,23 @@ function nameOf(state: GameState, id: number): string {
 
 function capitalize(text: string): string {
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function describeRefusal(before: GameState, reason: AutoRefusal, entityId?: number): string {
+  switch (reason) {
+    case "monster-in-view":
+      return `Not with ${entityId === undefined ? "a monster" : nameOf(before, entityId)} in view.`;
+    case "nothing-to-explore":
+      return "You have explored everything you can reach.";
+    case "stairs-unknown":
+      return "You have not found a way to the stairs yet.";
+    case "already-there":
+      return "You are already standing on the stairs.";
+    case "full-health":
+      return "You are already at full health.";
+    case "poisoned":
+      return "You cannot rest while poisoned.";
+  }
 }
 
 /**
@@ -126,6 +143,8 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
       return entry(`You descend to depth ${String(event.depth)}.`, "system");
     case "no-stairs-here":
       return entry("There are no stairs here.", "info");
+    case "auto-refused":
+      return entry(describeRefusal(before, event.reason, event.entityId), "info");
     case "player-levelled-up":
       return entry(`Welcome to level ${String(event.level)}! You feel stronger.`, "good");
     case "game-won":

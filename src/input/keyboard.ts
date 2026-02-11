@@ -7,16 +7,24 @@
 import type { Action, Point } from "../core/index";
 
 /** Which screen currently has the keyboard. Owned by the client, not the game state. */
-export type UiMode = "play" | "inventory" | "drop" | "help";
+export type UiMode = "play" | "inventory" | "drop" | "help" | "examine";
 
 /** Commands that affect the client (overlays) rather than the game state. */
 export type UiCommand =
   | { readonly type: "open"; readonly mode: Exclude<UiMode, "play"> }
   | { readonly type: "close" }
-  | { readonly type: "zoom"; readonly direction: "in" | "out" | "reset" };
+  | { readonly type: "zoom"; readonly direction: "in" | "out" | "reset" }
+  /** Move the examine cursor by one cell. */
+  | { readonly type: "cursor"; readonly direction: Point }
+  /** Jump the examine cursor to the next visible monster. */
+  | { readonly type: "cursor-next" };
 
 export type InputCommand =
   | { readonly kind: "action"; readonly action: Action }
+  /** An action the client repeats until `autoContinues` says to stop. */
+  | { readonly kind: "auto"; readonly action: Action }
+  /** Descend when standing on the stairs, otherwise travel to them. */
+  | { readonly kind: "stairs" }
   | { readonly kind: "ui"; readonly command: UiCommand };
 
 const MOVEMENT_KEYS: Readonly<Record<string, Point>> = {
@@ -59,7 +67,14 @@ function playModeCommand(key: string): InputCommand | null {
     case "s":
       return { kind: "action", action: { type: "wait" } };
     case ">":
-      return { kind: "action", action: { type: "descend" } };
+      return { kind: "stairs" };
+    case "o":
+      return { kind: "auto", action: { type: "explore" } };
+    case "r":
+    case "R":
+      return { kind: "auto", action: { type: "rest" } };
+    case "x":
+      return { kind: "ui", command: { type: "open", mode: "examine" } };
     case "g":
     case ",":
       return { kind: "action", action: { type: "pick-up" } };
@@ -91,6 +106,18 @@ export function keyToCommand(key: string, mode: UiMode): InputCommand | null {
     return { kind: "ui", command: { type: "close" } };
   }
   switch (mode) {
+    case "examine": {
+      if (key === "x" || key === "Enter") {
+        return { kind: "ui", command: { type: "close" } };
+      }
+      if (key === "Tab") {
+        return { kind: "ui", command: { type: "cursor-next" } };
+      }
+      const direction = MOVEMENT_KEYS[key];
+      return direction === undefined
+        ? null
+        : { kind: "ui", command: { type: "cursor", direction } };
+    }
     case "help":
       return key === "?" ? { kind: "ui", command: { type: "close" } } : null;
     case "inventory": {

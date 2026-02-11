@@ -15,10 +15,25 @@ import { runMonsterTurn } from "./systems/ai";
 import { meleeAttack } from "./systems/combat";
 import { PLAYER_SIGHT_RADIUS, updateVisibility } from "./systems/fov";
 import { INVENTORY_CAPACITY, dropItem, pickUp, useItem } from "./systems/items";
+import {
+  exploreStep,
+  isOnStairs,
+  stairsKnown,
+  travelStep,
+  visibleMonsters,
+} from "./systems/explore";
 import { moveEntity } from "./systems/movement";
 import { applyLevelUps } from "./systems/progression";
-import { isMovementScrambled, tickAllStatuses } from "./systems/status";
-import type { Action, Entity, GameEvent, GameState, LogEntry, TurnResult } from "./types";
+import { hasStatus, isMovementScrambled, tickAllStatuses } from "./systems/status";
+import type {
+  Action,
+  AutoRefusal,
+  Entity,
+  GameEvent,
+  GameState,
+  LogEntry,
+  TurnResult,
+} from "./types";
 
 export const PLAYER_ID = 1;
 
@@ -157,6 +172,66 @@ export function descend(state: GameState): PhaseResult {
   return { state: next, events: [{ type: "level-descended", depth }], tookTurn: true };
 }
 
+function refuse(state: GameState, reason: AutoRefusal, entityId?: number): PhaseResult {
+  const event: GameEvent =
+    entityId === undefined
+      ? { type: "auto-refused", reason }
+      : { type: "auto-refused", reason, entityId };
+  return { state, events: [event], tookTurn: false };
+}
+
+/** Automatic actions never start with a monster in view; the player must deal with it first. */
+function monsterInView(state: GameState): PhaseResult | null {
+  const monster = visibleMonsters(state)[0];
+  return monster === undefined ? null : refuse(state, "monster-in-view", monster.id);
+}
+
+function resolveExplore(state: GameState): PhaseResult {
+  const refusal = monsterInView(state);
+  if (refusal !== null) {
+    return refusal;
+  }
+  const step = exploreStep(state);
+  if (step === null) {
+    return refuse(state, "nothing-to-explore");
+  }
+  return resolveMove(state, step.direction);
+}
+
+function resolveTravelToStairs(state: GameState): PhaseResult {
+  const refusal = monsterInView(state);
+  if (refusal !== null) {
+    return refusal;
+  }
+  const stairs = state.map.stairsDown;
+  if (stairs === undefined || !stairsKnown(state)) {
+    return refuse(state, "stairs-unknown");
+  }
+  if (isOnStairs(state)) {
+    return refuse(state, "already-there");
+  }
+  const step = travelStep(state, stairs);
+  if (step === null) {
+    return refuse(state, "stairs-unknown");
+  }
+  return resolveMove(state, step.direction);
+}
+
+function resolveRest(state: GameState): PhaseResult {
+  const refusal = monsterInView(state);
+  if (refusal !== null) {
+    return refusal;
+  }
+  const player = getPlayer(state);
+  if (hasStatus(player, "poison")) {
+    return refuse(state, "poisoned");
+  }
+  if (player.health === undefined || player.health.current >= player.health.max) {
+    return refuse(state, "full-health");
+  }
+  return { state, events: [], tookTurn: true };
+}
+
 function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
   switch (action.type) {
     case "move":
@@ -171,6 +246,12 @@ function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
       return useItem(state, action.slot);
     case "drop-item":
       return dropItem(state, action.slot);
+    case "explore":
+      return resolveExplore(state);
+    case "travel-to-stairs":
+      return resolveTravelToStairs(state);
+    case "rest":
+      return resolveRest(state);
   }
 }
 

@@ -11,7 +11,10 @@ const KEY_MAP: readonly (readonly [string, string])[] = [
   ["Arrow keys / h j k l", "move (west, south, north, east)"],
   ["y u b n", "move diagonally"],
   [". or s", "wait one turn"],
-  [">", "descend the stairs (when standing on them)"],
+  [">", "descend the stairs, or walk to them if you have seen them"],
+  ["o", "explore until something interesting appears"],
+  ["r", "rest until healed; any key interrupts"],
+  ["x", "examine: move the cursor, Tab cycles monsters"],
   ["g or ,", "pick up the item under you"],
   ["i", "open your pack; press a letter to use or equip"],
   ["d", "drop an item; press a letter to choose"],
@@ -31,7 +34,7 @@ const LEGEND: readonly (readonly [string, string])[] = [
 ];
 
 export function drawHelp(renderer: Renderer): void {
-  const box = centredBox(renderer, 76, 28);
+  const box = centredBox(renderer, 76, 31);
   drawFrame(renderer, box, "Help");
   const left = box.col + 3;
   let row = box.row + 2;
