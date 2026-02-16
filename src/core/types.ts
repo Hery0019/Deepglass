@@ -44,6 +44,8 @@ export type AiComponent = {
   readonly alerted?: boolean;
   /** Set while a fleeing monster is retreating. */
   readonly fleeing?: boolean;
+  /** Set on the turn a ranged monster backed away, so it stands and shoots on the next. */
+  readonly backedOff?: boolean;
 };
 
 export type ExperienceComponent = {
