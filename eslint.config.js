@@ -89,6 +89,13 @@ export default tseslint.config(
     },
   },
   {
+    // Command-line tools run under Node.
+    files: ["tools/**/*.ts"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
+  {
     files: ["*.config.ts"],
     languageOptions: {
       globals: { ...globals.node },
