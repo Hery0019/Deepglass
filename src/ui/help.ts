@@ -11,7 +11,7 @@ const KEY_MAP: readonly (readonly [string, string])[] = [
   ["Arrow keys / h j k l", "move (west, south, north, east)"],
   ["y u b n", "move diagonally"],
   [". or s", "wait one turn"],
-  [">", "descend the stairs, or walk to them if you have seen them"],
+  [">", "descend, or walk to the stairs once you have seen them"],
   ["o", "explore until something interesting appears"],
   ["r", "rest until healed; any key interrupts"],
   ["x", "examine: move the cursor, Tab cycles monsters"],
