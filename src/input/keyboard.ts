@@ -7,7 +7,7 @@
 import type { Action, Point } from "../core/index";
 
 /** Which screen currently has the keyboard. Owned by the client, not the game state. */
-export type UiMode = "play" | "inventory" | "drop" | "help" | "examine";
+export type UiMode = "play" | "inventory" | "drop" | "help" | "examine" | "messages";
 
 /** Commands that affect the client (overlays) rather than the game state. */
 export type UiCommand =
@@ -17,7 +17,9 @@ export type UiCommand =
   /** Move the examine cursor by one cell. */
   | { readonly type: "cursor"; readonly direction: Point }
   /** Jump the examine cursor to the next visible monster. */
-  | { readonly type: "cursor-next" };
+  | { readonly type: "cursor-next" }
+  /** Scroll the message history; positive is toward older entries. */
+  | { readonly type: "scroll"; readonly delta: number };
 
 export type InputCommand =
   | { readonly kind: "action"; readonly action: Action }
@@ -84,6 +86,8 @@ function playModeCommand(key: string): InputCommand | null {
       return { kind: "ui", command: { type: "open", mode: "drop" } };
     case "?":
       return { kind: "ui", command: { type: "open", mode: "help" } };
+    case "m":
+      return { kind: "ui", command: { type: "open", mode: "messages" } };
     case "+":
     case "=":
       return { kind: "ui", command: { type: "zoom", direction: "in" } };
@@ -120,6 +124,23 @@ export function keyToCommand(key: string, mode: UiMode): InputCommand | null {
     }
     case "help":
       return key === "?" ? { kind: "ui", command: { type: "close" } } : null;
+    case "messages":
+      switch (key) {
+        case "m":
+          return { kind: "ui", command: { type: "close" } };
+        case "ArrowUp":
+        case "k":
+          return { kind: "ui", command: { type: "scroll", delta: 1 } };
+        case "ArrowDown":
+        case "j":
+          return { kind: "ui", command: { type: "scroll", delta: -1 } };
+        case "PageUp":
+          return { kind: "ui", command: { type: "scroll", delta: 10 } };
+        case "PageDown":
+          return { kind: "ui", command: { type: "scroll", delta: -10 } };
+        default:
+          return null;
+      }
     case "inventory": {
       if (key === "i") {
         return { kind: "ui", command: { type: "close" } };

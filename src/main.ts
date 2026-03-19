@@ -25,6 +25,7 @@ import { drawExamine, examineTargets } from "./ui/examine";
 import { drawHelp } from "./ui/help";
 import { drawHud } from "./ui/hud";
 import { drawInventory } from "./ui/inventory";
+import { drawMessageHistory, maxHistoryOffset } from "./ui/messages";
 
 /** Glyph cells never shrink below this, so small windows scroll instead of becoming unreadable. */
 const MIN_CELL_HEIGHT = 14;
@@ -96,6 +97,7 @@ function main(): void {
   let zoomIndex = DEFAULT_ZOOM_INDEX;
   let renderer = buildRenderer(canvas, ZOOM_LEVELS[zoomIndex] ?? 1);
   let cursor: Point = getPlayer(state).position;
+  let historyOffset = 0;
   let autoTimer: number | null = null;
 
   const drawOverlay = (r: Renderer, s: GameState): void => {
@@ -107,6 +109,8 @@ function main(): void {
       drawInventory(r, s, mode === "drop");
     } else if (mode === "help") {
       drawHelp(r);
+    } else if (mode === "messages") {
+      drawMessageHistory(r, s, historyOffset);
     }
     drawEndScreen(r, s);
   };
@@ -197,6 +201,7 @@ function main(): void {
           if (mode === "examine") {
             cursor = getPlayer(state).position;
           }
+          historyOffset = 0;
           break;
         case "close":
           mode = "play";
@@ -206,6 +211,9 @@ function main(): void {
           break;
         case "cursor-next":
           cycleCursor();
+          break;
+        case "scroll":
+          historyOffset = Math.min(maxHistoryOffset(state), Math.max(0, historyOffset + ui.delta));
           break;
         case "zoom":
           if (ui.direction === "reset") {
