@@ -29,7 +29,7 @@ const LEGEND: readonly (readonly [string, string])[] = [
   ["@", "you"],
   ["#  .", "wall, floor"],
   [">", "stairs down"],
-  ["!  ?", "potion, scroll"],
+  ["!  ?  %", "potion, scroll, food"],
   [")  [", "weapon, armour"],
   ["letters", "monsters; move into one to attack it"],
 ];

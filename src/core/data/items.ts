@@ -10,6 +10,7 @@ export type ItemId =
   | "health-potion"
   | "scroll-of-flame"
   | "scroll-of-bewilderment"
+  | "food-ration"
   | "dagger"
   | "sword"
   | "war-axe"
@@ -17,11 +18,12 @@ export type ItemId =
   | "chain-mail"
   | "plate-armour";
 
-export type ItemCategory = "potion" | "scroll" | "weapon" | "armour";
+export type ItemCategory = "potion" | "scroll" | "food" | "weapon" | "armour";
 
 /** What happens when a consumable is used. */
 export type ItemEffect =
   | { readonly type: "heal"; readonly amount: number; readonly cures: readonly StatusId[] }
+  | { readonly type: "feed"; readonly amount: number }
   | {
       readonly type: "area-damage";
       readonly radius: number;
@@ -75,6 +77,18 @@ export const ITEMS: Readonly<Record<ItemId, ItemDef>> = {
     minDepth: 1,
     maxDepth: 9,
     weight: 22,
+  },
+  "food-ration": {
+    id: "food-ration",
+    name: "food ration",
+    glyph: "%",
+    color: "#c8a165",
+    category: "food",
+    description: "Dried meat and hard bread. Restores 800 nutrition.",
+    effect: { type: "feed", amount: 800 },
+    minDepth: 1,
+    maxDepth: 9,
+    weight: 16,
   },
   "scroll-of-flame": {
     id: "scroll-of-flame",

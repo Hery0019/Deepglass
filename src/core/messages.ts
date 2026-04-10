@@ -6,6 +6,7 @@
 import { STATUS_EFFECTS } from "./data/effects";
 import { ITEMS } from "./data/items";
 import { findEntity } from "./entity";
+import type { HungerLevel } from "./systems/hunger";
 import type { AutoRefusal, GameEvent, GameState, LogEntry, LogTone } from "./types";
 
 function nameOf(state: GameState, id: number): string {
@@ -17,6 +18,19 @@ function nameOf(state: GameState, id: number): string {
 
 function capitalize(text: string): string {
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function describeHunger(level: HungerLevel): [string, LogTone] {
+  switch (level) {
+    case "fed":
+      return ["You feel fed.", "good"];
+    case "hungry":
+      return ["You are getting hungry.", "bad"];
+    case "weak":
+      return ["You are weak with hunger. You will not heal like this.", "bad"];
+    case "starving":
+      return ["You are starving!", "bad"];
+  }
 }
 
 function describeRefusal(before: GameState, reason: AutoRefusal, entityId?: number): string {
@@ -104,7 +118,7 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
       return entry(`You drop the ${ITEMS[event.item.defId].name}.`, "info");
     case "item-used": {
       const def = ITEMS[event.item.defId];
-      const verb = def.category === "scroll" ? "read" : "drink";
+      const verb = def.category === "scroll" ? "read" : def.category === "food" ? "eat" : "drink";
       return entry(`You ${verb} the ${def.name}.`, "info");
     }
     case "item-equipped": {
@@ -143,6 +157,8 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
       return entry(`You descend to depth ${String(event.depth)}.`, "system");
     case "no-stairs-here":
       return entry("There are no stairs here.", "info");
+    case "hunger-changed":
+      return entry(...describeHunger(event.level));
     case "auto-refused":
       return entry(describeRefusal(before, event.reason, event.entityId), "info");
     case "player-levelled-up":

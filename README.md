@@ -83,8 +83,8 @@ monster on the level one action in return.
 | `0`                         | Reset zoom                                                                        |
 | `Esc`                       | Close any overlay                                                                 |
 
-Glyphs: `#` wall, `.` floor, `>` stairs down, `!` potion, `?` scroll, `)` weapon,
-`[` armour. Letters are monsters. Tiles you have seen but cannot currently see
+Glyphs: `#` wall, `.` floor, `>` stairs down, `!` potion, `?` scroll, `%` food,
+`)` weapon, `[` armour. Letters are monsters. Tiles you have seen but cannot currently see
 are drawn dimmed.
 
 The status bar shows health, level and experience, effective attack and defence,
@@ -96,7 +96,10 @@ repeat one turn at a time and stop as soon as a monster comes into view, you
 take damage, you step onto an item, or there is nothing left to do. Any key
 interrupts them. They refuse to start with a monster in view.
 
-Health regenerates one point every eight turns unless you are poisoned. Killing
+Health regenerates one point every eight turns unless you are poisoned or weak
+with hunger. Nutrition drops by one every turn: below 300 you are hungry, below
+100 you are weak and stop healing, and at zero you starve, losing a point of
+health every four turns. A food ration restores 800. Resting is never free. Killing
 monsters grants experience; each character level adds health and damage, and
 every third level adds a point of defence.
 
@@ -111,7 +114,7 @@ and poison on hit; kobolds run away when wounded, recover out of sight, and come
 back. Monsters pursue only while they can see you, then head for where they last
 saw you, then give up.
 
-Items: health potion (heals and cures poison), scroll of flame (burns everything
+Items: food ration, health potion (heals and cures poison), scroll of flame (burns everything
 near you), scroll of bewilderment (confuses everything near you), three weapons
 and three armour pieces with accuracy trade-offs. The pack holds ten items.
 
@@ -133,7 +136,7 @@ src/
     types.ts           GameState, Entity, Action, GameEvent
     entity.ts          entity lookup and immutable updates
     map/               tile table, dungeon map, room-and-corridor generator
-    systems/           movement, combat, fov, pathfinding, ai, items, status, progression, explore
+    systems/           movement, combat, fov, pathfinding, ai, items, status, hunger, progression, explore
     data/              monster, item, and status effect tables
     level.ts           builds a level: map plus monsters and items for a depth
     messages.ts        turns events into log text
@@ -228,7 +231,7 @@ union. Consumables carry an `effect`; equipment carries `weapon` or `armour`:
 },
 ```
 
-Effect types available today: `heal` (with a list of statuses to cure),
+Effect types available today: `heal` (with a list of statuses to cure), `feed`,
 `area-damage`, and `area-status`. A new effect type is a new case in
 `applyEffect` in `src/core/systems/items.ts`.
 
