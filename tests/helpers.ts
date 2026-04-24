@@ -2,7 +2,7 @@
  * Test helpers: build small maps from string art so FOV and pathfinding can
  * be checked against hand-verified expectations.
  *
- * Legend: '#' wall, '.' floor, '>' stairs down, '@' player start (floor).
+ * Legend: '#' wall, '.' floor, '+' closed door, '>' stairs down, '@' player start (floor).
  */
 
 import type { Point } from "../src/core/grid";
@@ -37,6 +37,9 @@ export function mapFromStrings(rows: readonly string[]): AsciiMap {
           break;
         case ".":
           tiles.push("floor");
+          break;
+        case "+":
+          tiles.push("door-closed");
           break;
         case ">":
           tiles.push("stairs-down");

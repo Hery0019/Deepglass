@@ -5,7 +5,9 @@
 
 import { STATUS_EFFECTS } from "./data/effects";
 import { ITEMS } from "./data/items";
+import { TRAPS } from "./data/traps";
 import { findEntity } from "./entity";
+import { isVisibleAt } from "./map/dungeon";
 import type { HungerLevel } from "./systems/hunger";
 import type { AutoRefusal, GameEvent, GameState, LogEntry, LogTone } from "./types";
 
@@ -157,6 +159,20 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
       return entry(`You descend to depth ${String(event.depth)}.`, "system");
     case "no-stairs-here":
       return entry("There are no stairs here.", "info");
+    case "door-opened": {
+      if (event.entityId === before.playerId) {
+        return entry("You open the door.", "info");
+      }
+      return isVisibleAt(before.map, event.at)
+        ? entry(`${capitalize(nameOf(before, event.entityId))} opens a door.`, "info")
+        : null;
+    }
+    case "trap-triggered":
+      return entry(TRAPS[event.trap].triggerText, "bad");
+    case "trap-found":
+      return entry(`You notice a ${TRAPS[event.trap].name}.`, "info");
+    case "entity-teleported":
+      return null;
     case "hunger-changed":
       return entry(...describeHunger(event.level));
     case "auto-refused":

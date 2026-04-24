@@ -5,10 +5,12 @@
 
 import { ITEM_LIST, type ItemDef } from "./data/items";
 import { BOSS_ID, MONSTERS, MONSTER_LIST, type MonsterDef } from "./data/monsters";
+import { TRAP_LIST, type TrapDef } from "./data/traps";
 import { type Point, pointKey, rectCenter } from "./grid";
 import type { DungeonMap } from "./map/dungeon";
 import { generateMap } from "./map/generate";
 import { type RngState, nextInt, pickWeighted } from "./rng";
+import { trapEntityFromDef } from "./systems/traps";
 import type { Entity } from "./types";
 
 export const FINAL_DEPTH = 9;
@@ -17,6 +19,7 @@ export type LevelResult = {
   readonly map: DungeonMap;
   readonly monsters: readonly Omit<Entity, "id">[];
   readonly items: readonly Omit<Entity, "id">[];
+  readonly traps: readonly Omit<Entity, "id">[];
   readonly rng: RngState;
   /** Item id counter after placement. */
   readonly nextItemId: number;
@@ -99,6 +102,16 @@ export function monsterCountForDepth(depth: number): {
   readonly max: number;
 } {
   return { min: 3 + Math.floor(depth / 2), max: 5 + depth };
+}
+
+/** Traps eligible at a depth, as a weighted table. */
+export function trapTableForDepth(depth: number): readonly TrapDef[] {
+  return TRAP_LIST.filter((t) => t.weight > 0 && depth >= t.minDepth);
+}
+
+/** Number of traps to place on a level, growing with depth. */
+export function trapCountForDepth(depth: number): { readonly min: number; readonly max: number } {
+  return { min: Math.floor(depth / 2), max: 1 + Math.floor(depth / 2) };
 }
 
 /** Number of items to place on a level. */
@@ -216,5 +229,25 @@ export function createLevel(rng: RngState, depth: number, firstItemId = 1): Leve
     }
   }
 
-  return { map, monsters, items, rng: state, nextItemId };
+  // Traps never share a tile with anything and never sit in the entrance room.
+  const traps: Omit<Entity, "id">[] = [];
+  const trapTable = trapTableForDepth(depth);
+  if (trapTable.length > 0) {
+    const range = trapCountForDepth(depth);
+    const count = nextInt(state, range.min, range.max);
+    state = count.rng;
+    for (let i = 0; i < count.value; i++) {
+      const spot = randomRoomTile(state, map, taken, spawnRoomIndex);
+      state = spot.rng;
+      if (spot.position === null) {
+        continue;
+      }
+      const def = pickWeighted(state, trapTable);
+      state = def.rng;
+      taken.add(pointKey(spot.position));
+      traps.push(trapEntityFromDef(def.value, spot.position));
+    }
+  }
+
+  return { map, monsters, items, traps, rng: state, nextItemId };
 }

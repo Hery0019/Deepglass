@@ -30,8 +30,8 @@ import {
   hungerLevel,
   isExploredAt,
   isOnStairs,
-  isVisibleAt,
   isWalkableAt,
+  knownPassable,
   stairsKnown,
   travelStep,
   visibleMonsters,
@@ -151,13 +151,6 @@ function stepToward(state: GameState, goal: Point): Action | null {
     type: "move",
     direction: { x: first.x - player.position.x, y: first.y - player.position.y },
   };
-}
-
-function knownPassable(state: GameState): (p: Point) => boolean {
-  return (p) =>
-    isExploredAt(state.map, p) &&
-    isWalkableAt(state.map, p) &&
-    !entitiesAt(state, p).some((e) => e.blocksMovement && isVisibleAt(state.map, e.position));
 }
 
 function fight(state: GameState, player: Entity, monsters: readonly Entity[]): Action {

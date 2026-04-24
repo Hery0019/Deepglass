@@ -106,6 +106,9 @@ function tileColor(type: keyof typeof TILES, visible: boolean): string {
       return visible ? PALETTE.floorVisible : PALETTE.floorExplored;
     case "stairs-down":
       return visible ? PALETTE.stairs : PALETTE.stairsExplored;
+    case "door-closed":
+    case "door-open":
+      return visible ? PALETTE.door : PALETTE.doorExplored;
   }
 }
 
@@ -125,11 +128,19 @@ function drawMap(renderer: Renderer, state: GameState): void {
 }
 
 function drawEntities(renderer: Renderer, state: GameState): void {
-  // Items first, then monsters, then the player so the player is always on top.
-  const order: Record<string, number> = { item: 0, monster: 1, player: 2 };
+  // Traps, then items, then monsters, then the player so the player is always on top.
+  const order: Record<string, number> = { trap: 0, item: 1, monster: 2, player: 3 };
   const sorted = [...state.entities].sort((a, b) => (order[a.kind] ?? 0) - (order[b.kind] ?? 0));
   for (const entity of sorted) {
-    if (!isVisibleAt(state.map, entity.position)) {
+    if (entity.trap?.hidden === true) {
+      continue;
+    }
+    // Known traps stay drawn on remembered tiles; creatures and items only while in view.
+    const shown =
+      entity.kind === "trap"
+        ? isExploredAt(state.map, entity.position)
+        : isVisibleAt(state.map, entity.position);
+    if (!shown) {
       continue;
     }
     drawGlyph(renderer, entity.position.x, entity.position.y, entity.glyph, entity.color);

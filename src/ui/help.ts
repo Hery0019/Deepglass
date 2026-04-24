@@ -28,7 +28,8 @@ const KEY_MAP: readonly (readonly [string, string])[] = [
 const LEGEND: readonly (readonly [string, string])[] = [
   ["@", "you"],
   ["#  .", "wall, floor"],
-  [">", "stairs down"],
+  ["+  '", "closed door, open door; walk into a door to open it"],
+  [">  ^", "stairs down, a trap you have found"],
   ["!  ?  %", "potion, scroll, food"],
   [")  [", "weapon, armour"],
   ["letters", "monsters; move into one to attack it"],

@@ -8,6 +8,8 @@ export const PALETTE = {
   floorExplored: "#26262f",
   stairs: "#e8d44d",
   stairsExplored: "#6e6524",
+  door: "#b5824a",
+  doorExplored: "#4f3a22",
   player: "#ffffff",
   hudText: "#c9c9d6",
   hudDim: "#6f6f80",

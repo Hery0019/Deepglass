@@ -4,7 +4,7 @@
  */
 
 import { type Point, type Rect, inBounds, toIndex } from "../grid";
-import { type TileType, isOpaque, isWalkable } from "./tiles";
+import { type TileType, isOpaque, isOpenable, isPassable, isWalkable } from "./tiles";
 
 export type DungeonMap = {
   readonly width: number;
@@ -32,6 +32,23 @@ export function isWalkableAt(map: DungeonMap, p: Point): boolean {
   return inBounds(p, map.width, map.height) && isWalkable(tileAt(map, p));
 }
 
+/** A closed door at `p`. */
+export function isDoorAt(map: DungeonMap, p: Point): boolean {
+  return inBounds(p, map.width, map.height) && isOpenable(tileAt(map, p));
+}
+
+/** Walkable, or a closed door: tiles a route may run through. */
+export function isPassableAt(map: DungeonMap, p: Point): boolean {
+  return inBounds(p, map.width, map.height) && isPassable(tileAt(map, p));
+}
+
+/** Replace one tile. Returns a new map; the old one is untouched. */
+export function setTile(map: DungeonMap, p: Point, tile: TileType): DungeonMap {
+  const tiles = [...map.tiles];
+  tiles[toIndex(p, map.width)] = tile;
+  return { ...map, tiles };
+}
+
 export function isOpaqueAt(map: DungeonMap, p: Point): boolean {
   return !inBounds(p, map.width, map.height) || isOpaque(tileAt(map, p));
 }
@@ -45,12 +62,12 @@ export function isExploredAt(map: DungeonMap, p: Point): boolean {
 }
 
 /**
- * Flood fill over walkable tiles from a start point.
+ * Flood fill over passable tiles (floor and doors) from a start point.
  * Returns the set of reachable indices (8-way movement).
  */
 export function floodFill(map: DungeonMap, start: Point): Set<number> {
   const reached = new Set<number>();
-  if (!isWalkableAt(map, start)) {
+  if (!isPassableAt(map, start)) {
     return reached;
   }
   const stack: Point[] = [start];
@@ -66,7 +83,7 @@ export function floodFill(map: DungeonMap, start: Point): Set<number> {
           continue;
         }
         const next = { x: current.x + dx, y: current.y + dy };
-        if (!isWalkableAt(map, next)) {
+        if (!isPassableAt(map, next)) {
           continue;
         }
         const index = toIndex(next, map.width);
@@ -80,14 +97,14 @@ export function floodFill(map: DungeonMap, start: Point): Set<number> {
   return reached;
 }
 
-/** Every walkable tile is reachable from `start`. */
+/** Every passable tile is reachable from `start`. */
 export function isFullyConnected(map: DungeonMap, start: Point): boolean {
   const reached = floodFill(map, start);
-  let walkableCount = 0;
+  let passableCount = 0;
   for (const tile of map.tiles) {
-    if (isWalkable(tile)) {
-      walkableCount++;
+    if (isPassable(tile)) {
+      passableCount++;
     }
   }
-  return reached.size === walkableCount;
+  return reached.size === passableCount;
 }

@@ -6,6 +6,7 @@
  */
 
 import type { StatusId } from "./data/effects";
+import type { TrapId } from "./data/traps";
 import type { ItemId } from "./data/items";
 import type { Point } from "./grid";
 import type { DungeonMap } from "./map/dungeon";
@@ -14,7 +15,7 @@ import type { HungerLevel } from "./systems/hunger";
 
 export type EntityId = number;
 
-export type EntityKind = "player" | "monster" | "item";
+export type EntityKind = "player" | "monster" | "item" | "trap";
 
 export type HealthComponent = {
   readonly current: number;
@@ -58,6 +59,11 @@ export type HungerComponent = {
 export type ExperienceComponent = {
   readonly level: number;
   readonly xp: number;
+};
+
+export type TrapComponent = {
+  readonly id: TrapId;
+  readonly hidden: boolean;
 };
 
 /** An item instance. Items on the floor are entities carrying one of these. */
@@ -120,6 +126,8 @@ export type Entity = {
   readonly sightRadius?: number;
   /** Present on floor items. */
   readonly item?: Item;
+  /** Present on traps. Hidden traps are neither drawn nor avoided until found. */
+  readonly trap?: TrapComponent;
   readonly inventory?: InventoryComponent;
   readonly equipment?: EquipmentComponent;
   readonly statuses?: readonly StatusInstance[];
@@ -224,6 +232,15 @@ export type GameEvent =
   | { readonly type: "status-applied"; readonly entityId: EntityId; readonly status: StatusId }
   | { readonly type: "status-expired"; readonly entityId: EntityId; readonly status: StatusId }
   | { readonly type: "hunger-changed"; readonly entityId: EntityId; readonly level: HungerLevel }
+  | { readonly type: "door-opened"; readonly entityId: EntityId; readonly at: Point }
+  | {
+      readonly type: "trap-triggered";
+      readonly entityId: EntityId;
+      readonly trap: TrapId;
+      readonly at: Point;
+    }
+  | { readonly type: "trap-found"; readonly trap: TrapId; readonly at: Point }
+  | { readonly type: "entity-teleported"; readonly entityId: EntityId; readonly to: Point }
   | { readonly type: "level-descended"; readonly depth: number }
   | { readonly type: "no-stairs-here" }
   | { readonly type: "auto-refused"; readonly reason: AutoRefusal; readonly entityId?: EntityId }

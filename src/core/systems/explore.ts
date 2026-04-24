@@ -17,10 +17,11 @@ import {
   pointsEqual,
   toIndex,
 } from "../grid";
-import { type DungeonMap, isExploredAt, isVisibleAt, isWalkableAt } from "../map/dungeon";
+import { type DungeonMap, isExploredAt, isPassableAt, isVisibleAt } from "../map/dungeon";
 import type { Action, Entity, GameState, TurnResult } from "../types";
 import { findPath } from "./pathfinding";
 import { hasStatus } from "./status";
+import { isKnownTrapAt } from "./traps";
 
 /** Monsters currently inside the player's field of view. */
 export function visibleMonsters(state: GameState): Entity[] {
@@ -39,9 +40,9 @@ export function stairsKnown(state: GameState): boolean {
   return stairs !== undefined && isExploredAt(state.map, stairs);
 }
 
-/** An explored, walkable tile with at least one unexplored neighbour. */
+/** An explored, passable tile with at least one unexplored neighbour. */
 export function isFrontier(map: DungeonMap, p: Point): boolean {
-  if (!isExploredAt(map, p) || !isWalkableAt(map, p)) {
+  if (!isExploredAt(map, p) || !isPassableAt(map, p)) {
     return false;
   }
   for (const d of DIRECTIONS_8) {
@@ -53,10 +54,13 @@ export function isFrontier(map: DungeonMap, p: Point): boolean {
   return false;
 }
 
-/** Tiles the player may plan a route through: seen, walkable, and not held by a visible monster. */
-function knownPassable(state: GameState): (p: Point) => boolean {
+/**
+ * Tiles the player may plan a route through: seen, floor or door, free of
+ * known traps, and not held by a visible monster.
+ */
+export function knownPassable(state: GameState): (p: Point) => boolean {
   return (p) => {
-    if (!isExploredAt(state.map, p) || !isWalkableAt(state.map, p)) {
+    if (!isExploredAt(state.map, p) || !isPassableAt(state.map, p) || isKnownTrapAt(state, p)) {
       return false;
     }
     const blocker = blockingEntityAt(state, p);
@@ -134,7 +138,8 @@ export function autoContinues(action: Action, before: GameState, result: TurnRes
   if (state.status !== "playing") {
     return false;
   }
-  if (events.some((e) => e.type !== "entity-moved")) {
+  // Opening a door on the way is part of the walk; anything else is worth stopping for.
+  if (events.some((e) => e.type !== "entity-moved" && e.type !== "door-opened")) {
     return false;
   }
   if (visibleMonsters(state).length > 0) {

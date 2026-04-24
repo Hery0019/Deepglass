@@ -26,6 +26,7 @@ import {
 import { moveEntity } from "./systems/movement";
 import { applyLevelUps } from "./systems/progression";
 import { hasStatus, isMovementScrambled, tickAllStatuses } from "./systems/status";
+import { searchForTraps, triggerTrapUnderPlayer } from "./systems/traps";
 import type {
   Action,
   AutoRefusal,
@@ -94,6 +95,9 @@ export function createGame(seed: number): GameState {
   for (const item of level.items) {
     state = spawnEntity(state, item).state;
   }
+  for (const trap of level.traps) {
+    state = spawnEntity(state, trap).state;
+  }
   return state;
 }
 
@@ -139,8 +143,13 @@ function resolveMove(state: GameState, requested: Entity["position"]): PhaseResu
   }
   const result = moveEntity(current, player, direction);
   const moved = result.events.some((e) => e.type === "entity-moved");
-  // Bumping into a wall costs no time, but a confused stumble does.
-  return { state: result.state, events: result.events, tookTurn: moved || scrambled };
+  const opened = result.events.some((e) => e.type === "door-opened");
+  if (!moved) {
+    // Bumping into a wall costs no time, but opening a door or a confused stumble does.
+    return { state: result.state, events: result.events, tookTurn: opened || scrambled };
+  }
+  const trap = triggerTrapUnderPlayer(result.state);
+  return { state: trap.state, events: [...result.events, ...trap.events], tookTurn: true };
 }
 
 /**
@@ -170,6 +179,9 @@ export function descend(state: GameState): PhaseResult {
   }
   for (const item of level.items) {
     next = spawnEntity(next, item).state;
+  }
+  for (const trap of level.traps) {
+    next = spawnEntity(next, trap).state;
   }
   return { state: next, events: [{ type: "level-descended", depth }], tookTurn: true };
 }
@@ -328,6 +340,12 @@ export function applyAction(state: GameState, action: Action): TurnResult {
     const statusPhase = tickAllStatuses(next);
     next = statusPhase.state;
     events.push(...statusPhase.events);
+  }
+
+  if (next.status === "playing") {
+    const search = searchForTraps(next);
+    next = search.state;
+    events.push(...search.events);
   }
 
   if (next.status === "playing") {
