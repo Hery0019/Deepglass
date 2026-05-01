@@ -7,7 +7,7 @@
 import type { Action, Point } from "../core/index";
 
 /** Which screen currently has the keyboard. Owned by the client, not the game state. */
-export type UiMode = "play" | "inventory" | "drop" | "help" | "examine" | "messages";
+export type UiMode = "play" | "inventory" | "drop" | "help" | "examine" | "target" | "messages";
 
 /** Commands that affect the client (overlays) rather than the game state. */
 export type UiCommand =
@@ -27,6 +27,8 @@ export type InputCommand =
   | { readonly kind: "auto"; readonly action: Action }
   /** Descend when standing on the stairs, otherwise travel to them. */
   | { readonly kind: "stairs" }
+  /** Shoot at whatever monster the targeting cursor is on. */
+  | { readonly kind: "fire-at-cursor" }
   | { readonly kind: "ui"; readonly command: UiCommand };
 
 const MOVEMENT_KEYS: Readonly<Record<string, Point>> = {
@@ -77,6 +79,8 @@ function playModeCommand(key: string): InputCommand | null {
       return { kind: "auto", action: { type: "rest" } };
     case "x":
       return { kind: "ui", command: { type: "open", mode: "examine" } };
+    case "f":
+      return { kind: "ui", command: { type: "open", mode: "target" } };
     case "g":
     case ",":
       return { kind: "action", action: { type: "pick-up" } };
@@ -110,8 +114,14 @@ export function keyToCommand(key: string, mode: UiMode): InputCommand | null {
     return { kind: "ui", command: { type: "close" } };
   }
   switch (mode) {
-    case "examine": {
-      if (key === "x" || key === "Enter") {
+    case "examine":
+    case "target": {
+      if (key === "Enter" || (mode === "target" && key === "f")) {
+        return mode === "target"
+          ? { kind: "fire-at-cursor" }
+          : { kind: "ui", command: { type: "close" } };
+      }
+      if (key === "x" && mode === "examine") {
         return { kind: "ui", command: { type: "close" } };
       }
       if (key === "Tab") {

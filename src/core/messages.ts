@@ -125,7 +125,8 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
     }
     case "item-equipped": {
       const def = ITEMS[event.item.defId];
-      const verb = def.category === "armour" ? "put on" : "wield";
+      const verb =
+        def.category === "armour" ? "put on" : def.category === "bow" ? "ready" : "wield";
       return entry(`You ${verb} the ${def.name}.`, "info");
     }
     case "item-unequipped": {
@@ -177,6 +178,11 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
       return entry(...describeHunger(event.level));
     case "auto-refused":
       return entry(describeRefusal(before, event.reason, event.entityId), "info");
+    case "fire-refused":
+      return entry(
+        event.reason === "no-bow" ? "You have no bow readied." : "Nothing you can shoot there.",
+        "info",
+      );
     case "player-levelled-up":
       return entry(`Welcome to level ${String(event.level)}! You feel stronger.`, "good");
     case "game-won":

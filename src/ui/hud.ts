@@ -10,6 +10,7 @@ import {
   effectiveAttack,
   effectiveDefence,
   equippedArmour,
+  equippedBow,
   equippedWeapon,
   getPlayer,
   hungerLevel,
@@ -65,9 +66,10 @@ export function drawHud(renderer: Renderer, state: GameState): void {
   // Row 2: equipment and statuses.
   const weapon = equippedWeapon(player);
   const armour = equippedArmour(player);
+  const bow = equippedBow(player);
   const gear = `Weapon: ${weapon === undefined ? "fists" : ITEMS[weapon.defId].name}  Armour: ${
     armour === undefined ? "none" : ITEMS[armour.defId].name
-  }`;
+  }${bow === undefined ? "" : `  Bow: ${ITEMS[bow.defId].name}`}`;
   drawText(renderer, 1, mapRows + 1, gear, PALETTE.hudDim);
   let col = gear.length + 3;
   const hunger = hungerLevel(player);

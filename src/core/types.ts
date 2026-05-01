@@ -82,6 +82,7 @@ export type EquipmentComponent = {
   /** Inventory item ids of the equipped pieces. */
   readonly weaponId?: number;
   readonly armourId?: number;
+  readonly bowId?: number;
 };
 
 export type StatusInstance = {
@@ -175,12 +176,17 @@ export type Action =
   /** Use a consumable or toggle equipment in the given inventory slot. */
   | { readonly type: "use-item"; readonly slot: number }
   | { readonly type: "drop-item"; readonly slot: number }
+  /** Shoot the readied bow at a visible monster. */
+  | { readonly type: "fire"; readonly targetId: EntityId }
   /** One step toward the nearest unexplored tile. Repeated by the client. */
   | { readonly type: "explore" }
   /** One step toward the known down staircase. Repeated by the client. */
   | { readonly type: "travel-to-stairs" }
   /** Wait one turn to recover health. Repeated by the client. */
   | { readonly type: "rest" };
+
+/** Why a shot could not be taken. */
+export type FireRefusal = "no-bow" | "no-target";
 
 /** Why an automatic action (explore, travel, rest) could not start. */
 export type AutoRefusal =
@@ -244,6 +250,7 @@ export type GameEvent =
   | { readonly type: "level-descended"; readonly depth: number }
   | { readonly type: "no-stairs-here" }
   | { readonly type: "auto-refused"; readonly reason: AutoRefusal; readonly entityId?: EntityId }
+  | { readonly type: "fire-refused"; readonly reason: FireRefusal }
   | { readonly type: "player-levelled-up"; readonly level: number }
   | { readonly type: "game-won" }
   | { readonly type: "message"; readonly text: string; readonly tone: LogTone };

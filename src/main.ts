@@ -12,8 +12,10 @@ import {
   type Point,
   addPoints,
   applyAction,
+  entitiesAt,
   autoContinues,
   createGame,
+  effectiveRanged,
   getPlayer,
   inBounds,
   isOnStairs,
@@ -21,7 +23,7 @@ import {
 import { type UiMode, keyToCommand } from "./input/keyboard";
 import { HUD_ROWS, type Renderer, createRenderer, render } from "./render/renderer";
 import { drawEndScreen } from "./ui/endscreen";
-import { drawExamine, examineTargets } from "./ui/examine";
+import { drawExamine, examineTargets, fireTargets } from "./ui/examine";
 import { drawHelp } from "./ui/help";
 import { drawHud } from "./ui/hud";
 import { drawInventory } from "./ui/inventory";
@@ -103,6 +105,8 @@ function main(): void {
   const drawOverlay = (r: Renderer, s: GameState): void => {
     if (mode === "examine") {
       drawExamine(r, s, cursor);
+    } else if (mode === "target") {
+      drawExamine(r, s, cursor, "Fire at");
     }
     drawHud(r, s);
     if (mode === "inventory" || mode === "drop") {
@@ -157,7 +161,7 @@ function main(): void {
   };
 
   const cycleCursor = (): void => {
-    const targets = examineTargets(state);
+    const targets = mode === "target" ? fireTargets(state) : examineTargets(state);
     if (targets.length === 0) {
       return;
     }
@@ -184,6 +188,13 @@ function main(): void {
       runAuto(command.action);
       return;
     }
+    if (command.kind === "fire-at-cursor") {
+      const target = entitiesAt(state, cursor).find((e) => e.kind === "monster");
+      state = applyAction(state, { type: "fire", targetId: target?.id ?? -1 }).state;
+      mode = "play";
+      draw();
+      return;
+    }
     if (command.kind === "stairs") {
       if (isOnStairs(state)) {
         state = applyAction(state, { type: "descend" }).state;
@@ -197,9 +208,16 @@ function main(): void {
       const ui = command.command;
       switch (ui.type) {
         case "open":
+          if (ui.mode === "target" && effectiveRanged(getPlayer(state)) === undefined) {
+            // Say so at once instead of opening a cursor with nothing to shoot.
+            state = applyAction(state, { type: "fire", targetId: -1 }).state;
+            break;
+          }
           mode = ui.mode;
           if (mode === "examine") {
             cursor = getPlayer(state).position;
+          } else if (mode === "target") {
+            cursor = fireTargets(state)[0] ?? getPlayer(state).position;
           }
           historyOffset = 0;
           break;

@@ -168,6 +168,7 @@ export function autoContinues(action: Action, before: GameState, result: TurnRes
     case "pick-up":
     case "use-item":
     case "drop-item":
+    case "fire":
       return false;
   }
 }

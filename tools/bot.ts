@@ -17,10 +17,12 @@ import {
   type Point,
   type TurnResult,
   applyAction,
+  canShoot,
   chebyshevDistance,
   createGame,
   entitiesAt,
   equippedArmour,
+  equippedBow,
   equippedWeapon,
   exploreStep,
   findPath,
@@ -75,6 +77,11 @@ function weaponScore(item: Item): number {
   return stats === undefined ? 0 : ((stats.min + stats.max) / 2) * (0.85 + stats.accuracyBonus);
 }
 
+function bowScore(item: Item): number {
+  const stats = ITEMS[item.defId].bow;
+  return stats === undefined ? 0 : ((stats.min + stats.max) / 2) * (0.85 + stats.accuracyBonus);
+}
+
 function armourScore(item: Item): number {
   const stats = ITEMS[item.defId].armour;
   return stats === undefined ? 0 : stats.defence - stats.accuracyPenalty * 4;
@@ -104,6 +111,10 @@ function worthPicking(player: Entity, item: Item): boolean {
   if (def.category === "armour") {
     const worn = equippedArmour(player);
     return worn === undefined || armourScore(item) > armourScore(worn);
+  }
+  if (def.category === "bow") {
+    const readied = equippedBow(player);
+    return readied === undefined || bowScore(item) > bowScore(readied);
   }
   return true;
 }
@@ -179,6 +190,9 @@ function fight(state: GameState, player: Entity, monsters: readonly Entity[]): A
   if (target === undefined) {
     return { type: "wait" };
   }
+  if (chebyshevDistance(target.position, player.position) > 1 && canShoot(state, player, target)) {
+    return { type: "fire", targetId: target.id };
+  }
   if (chebyshevDistance(target.position, player.position) <= 1) {
     return {
       type: "move",
@@ -249,6 +263,10 @@ export function chooseAction(state: GameState, memory: BotMemory, style: BotStyl
   if (armourSlot !== -1) {
     return keep({ type: "use-item", slot: armourSlot });
   }
+  const bowSlot = betterGearSlot(player, bowScore, equippedBow(player));
+  if (bowSlot !== -1) {
+    return keep({ type: "use-item", slot: bowSlot });
+  }
 
   const monsters = visibleMonsters(state).filter(
     // A fleeing kobold is not worth chasing.
@@ -284,9 +302,12 @@ export function chooseAction(state: GameState, memory: BotMemory, style: BotStyl
     const spare = slotOf(
       player,
       (i) =>
-        (ITEMS[i.defId].category === "weapon" || ITEMS[i.defId].category === "armour") &&
+        (ITEMS[i.defId].category === "weapon" ||
+          ITEMS[i.defId].category === "armour" ||
+          ITEMS[i.defId].category === "bow") &&
         i.id !== equippedWeapon(player)?.id &&
-        i.id !== equippedArmour(player)?.id,
+        i.id !== equippedArmour(player)?.id &&
+        i.id !== equippedBow(player)?.id,
     );
     if (spare !== -1) {
       return keep({ type: "drop-item", slot: spare });

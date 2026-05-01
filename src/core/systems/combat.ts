@@ -7,9 +7,12 @@
  */
 
 import { removeEntity, updateEntity } from "../entity";
+import { chebyshevDistance } from "../grid";
+import { isVisibleAt } from "../map/dungeon";
 import { type RngState, chance, nextInt } from "../rng";
 import type { AttackComponent, Entity, GameEvent, GameState } from "../types";
-import { effectiveAttack, effectiveDefence } from "./items";
+import { hasLineOfSight } from "./fov";
+import { effectiveAttack, effectiveDefence, effectiveRanged } from "./items";
 import { applyStatus } from "./status";
 
 export const MIN_DAMAGE = 1;
@@ -132,6 +135,30 @@ function resolveAttack(
 /** Resolve one melee attack from attacker to defender, including a possible kill. */
 export function meleeAttack(state: GameState, attacker: Entity, defender: Entity): CombatResult {
   return resolveAttack(state, attacker, defender, effectiveAttack(attacker), false);
+}
+
+/** Whether `shooter` can hit `target` with its readied bow: in range, in view, with a clear line. */
+export function canShoot(state: GameState, shooter: Entity, target: Entity): boolean {
+  const bow = effectiveRanged(shooter);
+  if (bow === undefined || target.kind !== "monster") {
+    return false;
+  }
+  if (chebyshevDistance(shooter.position, target.position) > bow.range) {
+    return false;
+  }
+  return (
+    isVisibleAt(state.map, target.position) &&
+    hasLineOfSight(state.map, shooter.position, target.position)
+  );
+}
+
+/** Shoot the readied bow. The caller checks `canShoot` first. */
+export function shoot(state: GameState, shooter: Entity, target: Entity): CombatResult {
+  const bow = effectiveRanged(shooter);
+  if (bow === undefined) {
+    return { state, events: [] };
+  }
+  return resolveAttack(state, shooter, target, bow, true);
 }
 
 /** Resolve one ranged attack. Falls back to the melee profile if the attacker has no ranged one. */

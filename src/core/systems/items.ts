@@ -7,7 +7,14 @@ import { ITEMS, type ItemDef } from "../data/items";
 import { entitiesAt, getPlayer, removeEntity, spawnEntity, updateEntity } from "../entity";
 import { chebyshevDistance } from "../grid";
 import { type RngState, nextInt } from "../rng";
-import type { AttackComponent, Entity, GameEvent, GameState, Item } from "../types";
+import type {
+  AttackComponent,
+  Entity,
+  GameEvent,
+  GameState,
+  Item,
+  RangedAttackComponent,
+} from "../types";
 import { applyDamage, isDead, resolveDeath } from "./combat";
 import { hasLineOfSight } from "./fov";
 import { feed } from "./hunger";
@@ -36,8 +43,36 @@ export function equippedArmour(entity: Entity): Item | undefined {
   return id === undefined ? undefined : entity.inventory?.items.find((i) => i.id === id);
 }
 
+export function equippedBow(entity: Entity): Item | undefined {
+  const id = entity.equipment?.bowId;
+  return id === undefined ? undefined : entity.inventory?.items.find((i) => i.id === id);
+}
+
 export function isEquipped(entity: Entity, item: Item): boolean {
-  return entity.equipment?.weaponId === item.id || entity.equipment?.armourId === item.id;
+  const equipment = entity.equipment;
+  return (
+    equipment?.weaponId === item.id ||
+    equipment?.armourId === item.id ||
+    equipment?.bowId === item.id
+  );
+}
+
+/** Ranged attack profile from the readied bow, or undefined without one. */
+export function effectiveRanged(entity: Entity): RangedAttackComponent | undefined {
+  const bow = equippedBow(entity);
+  const stats = bow === undefined ? undefined : itemDef(bow).bow;
+  if (stats === undefined) {
+    return undefined;
+  }
+  const base = entity.attack ?? { min: 1, max: 1, accuracy: 1 };
+  const armour = equippedArmour(entity);
+  const penalty = armour === undefined ? 0 : (itemDef(armour).armour?.accuracyPenalty ?? 0);
+  return {
+    min: stats.min,
+    max: stats.max,
+    accuracy: Math.min(1, Math.max(0.05, base.accuracy + stats.accuracyBonus - penalty)),
+    range: stats.range,
+  };
 }
 
 /** Attack profile after applying the equipped weapon and armour penalty. */
@@ -134,6 +169,9 @@ function unequip(state: GameState, entityId: number, item: Item): GameState {
     if (equipment.armourId === item.id) {
       delete equipment.armourId;
     }
+    if (equipment.bowId === item.id) {
+      delete equipment.bowId;
+    }
     return { ...e, equipment };
   });
 }
@@ -146,6 +184,8 @@ function equip(state: GameState, entityId: number, item: Item): GameState {
       equipment.weaponId = item.id;
     } else if (def.category === "armour") {
       equipment.armourId = item.id;
+    } else if (def.category === "bow") {
+      equipment.bowId = item.id;
     }
     return { ...e, equipment };
   });
@@ -160,7 +200,7 @@ export function useItem(state: GameState, slot: number): ItemResult {
   }
   const def = itemDef(item);
 
-  if (def.category === "weapon" || def.category === "armour") {
+  if (def.category === "weapon" || def.category === "armour" || def.category === "bow") {
     if (isEquipped(player, item)) {
       return {
         state: unequip(state, player.id, item),

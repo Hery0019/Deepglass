@@ -6,16 +6,16 @@
  * It is pure and deterministic: identical inputs produce identical outputs.
  */
 
-import { blockingEntityAt, getPlayer, spawnEntity, updateEntity } from "./entity";
+import { blockingEntityAt, findEntity, getPlayer, spawnEntity, updateEntity } from "./entity";
 import { DIRECTIONS_8, addPoints, pointsEqual } from "./grid";
 import { FINAL_DEPTH, createLevel } from "./level";
 import { describeEvent } from "./messages";
 import { type RngState, pick, seedRng } from "./rng";
 import { runMonsterTurn } from "./systems/ai";
-import { meleeAttack } from "./systems/combat";
+import { canShoot, meleeAttack, shoot } from "./systems/combat";
 import { PLAYER_SIGHT_RADIUS, updateVisibility } from "./systems/fov";
 import { HUNGER_MAX, HUNGER_START, hungerBlocksRegen, tickHunger } from "./systems/hunger";
-import { INVENTORY_CAPACITY, dropItem, pickUp, useItem } from "./systems/items";
+import { INVENTORY_CAPACITY, dropItem, effectiveRanged, pickUp, useItem } from "./systems/items";
 import {
   exploreStep,
   isOnStairs,
@@ -246,6 +246,19 @@ function resolveRest(state: GameState): PhaseResult {
   return { state, events: [], tookTurn: true };
 }
 
+function resolveFire(state: GameState, targetId: number): PhaseResult {
+  const player = getPlayer(state);
+  if (effectiveRanged(player) === undefined) {
+    return { state, events: [{ type: "fire-refused", reason: "no-bow" }], tookTurn: false };
+  }
+  const target = findEntity(state, targetId);
+  if (target === undefined || !canShoot(state, player, target)) {
+    return { state, events: [{ type: "fire-refused", reason: "no-target" }], tookTurn: false };
+  }
+  const result = shoot(state, player, target);
+  return { state: result.state, events: result.events, tookTurn: true };
+}
+
 function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
   switch (action.type) {
     case "move":
@@ -260,6 +273,8 @@ function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
       return useItem(state, action.slot);
     case "drop-item":
       return dropItem(state, action.slot);
+    case "fire":
+      return resolveFire(state, action.targetId);
     case "explore":
       return resolveExplore(state);
     case "travel-to-stairs":

@@ -15,6 +15,7 @@ const KEY_MAP: readonly (readonly [string, string])[] = [
   ["o", "explore until something interesting appears"],
   ["r", "rest until healed; any key interrupts"],
   ["x", "examine: move the cursor, Tab cycles monsters"],
+  ["f", "fire the readied bow: Tab picks a target, f or Enter shoots"],
   ["g or ,", "pick up the item under you"],
   ["i", "open your pack; press a letter to use or equip"],
   ["d", "drop an item; press a letter to choose"],
@@ -31,12 +32,12 @@ const LEGEND: readonly (readonly [string, string])[] = [
   ["+  '", "closed door, open door; walk into a door to open it"],
   [">  ^", "stairs down, a trap you have found"],
   ["!  ?  %", "potion, scroll, food"],
-  [")  [", "weapon, armour"],
+  [")  }  [", "weapon, bow, armour"],
   ["letters", "monsters; move into one to attack it"],
 ];
 
 export function drawHelp(renderer: Renderer): void {
-  const box = centredBox(renderer, 76, 32);
+  const box = centredBox(renderer, 76, 33);
   drawFrame(renderer, box, "Help");
   const left = box.col + 3;
   let row = box.row + 2;
