@@ -6,14 +6,18 @@
 import { ITEM_LIST, type ItemDef } from "./data/items";
 import { BOSS_ID, MONSTERS, MONSTER_LIST, type MonsterDef } from "./data/monsters";
 import { TRAP_LIST, type TrapDef } from "./data/traps";
-import { type Point, pointKey, rectCenter } from "./grid";
+import { type Point, chebyshevDistance, fromIndex, pointKey, rectCenter } from "./grid";
+import { farthestFloor, generateCavern } from "./map/cavern";
 import type { DungeonMap } from "./map/dungeon";
 import { generateMap } from "./map/generate";
-import { type RngState, nextInt, pickWeighted } from "./rng";
+import { type RngState, chance, nextInt, pickWeighted } from "./rng";
 import { trapEntityFromDef } from "./systems/traps";
 import type { Entity } from "./types";
 
 export const FINAL_DEPTH = 9;
+
+/** Chance that a level between the first and the last is a cavern rather than rooms. */
+export const CAVERN_CHANCE = 0.35;
 
 export type LevelResult = {
   readonly map: DungeonMap;
@@ -119,14 +123,37 @@ export function itemCountForDepth(depth: number): { readonly min: number; readon
   return { min: 4, max: 6 + Math.floor(depth / 2) };
 }
 
-/** Pick a random floor tile inside a room that is not already taken. */
+/** How far from the entrance things are placed on a cavern level, which has no rooms to exclude. */
+const CAVERN_ENTRANCE_CLEARANCE = 8;
+
+/**
+ * Pick a random free floor tile: inside a room on a room level, anywhere
+ * on a cavern. `avoidEntrance` keeps monsters out of the entrance room, or
+ * on caverns a few tiles away from the entrance.
+ */
 function randomRoomTile(
   rng: RngState,
   map: DungeonMap,
   taken: ReadonlySet<string>,
-  excludeRoomIndex: number,
+  avoidEntrance: boolean,
 ): { readonly rng: RngState; readonly position: Point | null } {
   let state = rng;
+  const excludeRoomIndex = avoidEntrance ? spawnRoomIndex(map) : -1;
+  if (map.rooms.length === 0) {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const roll = nextInt(state, 0, map.tiles.length - 1);
+      state = roll.rng;
+      const position = fromIndex(roll.value, map.width);
+      if (map.tiles[roll.value] !== "floor" || taken.has(pointKey(position))) {
+        continue;
+      }
+      if (avoidEntrance && chebyshevDistance(position, map.spawn) < CAVERN_ENTRANCE_CLEARANCE) {
+        continue;
+      }
+      return { rng: state, position };
+    }
+    return { rng: state, position: null };
+  }
   for (let attempt = 0; attempt < 30; attempt++) {
     const roomPick = nextInt(state, 0, map.rooms.length - 1);
     state = roomPick.rng;
@@ -150,7 +177,19 @@ function randomRoomTile(
   return { rng: state, position: null };
 }
 
+/** Index of the room the player arrives in, or -1 on a cavern. */
+function spawnRoomIndex(map: DungeonMap): number {
+  return map.rooms.findIndex((r) => {
+    const c = rectCenter(r);
+    return c.x === map.spawn.x && c.y === map.spawn.y;
+  });
+}
+
+/** Where the boss waits: the farthest room's centre, or the farthest cave tile. */
 function farthestRoomCenter(map: DungeonMap): Point | null {
+  if (map.rooms.length === 0) {
+    return farthestFloor(map, map.spawn);
+  }
   let best: Point | null = null;
   let bestDistance = -1;
   for (const room of map.rooms) {
@@ -164,8 +203,24 @@ function farthestRoomCenter(map: DungeonMap): Point | null {
   return best;
 }
 
+/** Whether the level at `depth` is a cavern. The first and last levels are always rooms. */
+export function rollCavern(
+  rng: RngState,
+  depth: number,
+): { readonly rng: RngState; readonly cavern: boolean } {
+  if (depth <= 1 || depth >= FINAL_DEPTH) {
+    return { rng, cavern: false };
+  }
+  const roll = chance(rng, CAVERN_CHANCE);
+  return { rng: roll.rng, cavern: roll.value };
+}
+
 export function createLevel(rng: RngState, depth: number, firstItemId = 1): LevelResult {
-  const generated = generateMap(rng, { withStairsDown: depth < FINAL_DEPTH });
+  const style = rollCavern(rng, depth);
+  const withStairsDown = depth < FINAL_DEPTH;
+  const generated = style.cavern
+    ? generateCavern(style.rng, { withStairsDown })
+    : generateMap(style.rng, { withStairsDown });
   const map = generated.map;
   let state = generated.rng;
 
@@ -173,11 +228,6 @@ export function createLevel(rng: RngState, depth: number, firstItemId = 1): Leve
   if (map.stairsDown !== undefined) {
     taken.add(pointKey(map.stairsDown));
   }
-  const spawnRoomIndex = map.rooms.findIndex((r) => {
-    const c = rectCenter(r);
-    return c.x === map.spawn.x && c.y === map.spawn.y;
-  });
-
   const monsters: Omit<Entity, "id">[] = [];
 
   // The boss guards the room farthest from the entrance on the final level.
@@ -195,7 +245,7 @@ export function createLevel(rng: RngState, depth: number, firstItemId = 1): Leve
     const count = nextInt(state, range.min, range.max);
     state = count.rng;
     for (let i = 0; i < count.value; i++) {
-      const spot = randomRoomTile(state, map, taken, spawnRoomIndex);
+      const spot = randomRoomTile(state, map, taken, true);
       state = spot.rng;
       if (spot.position === null) {
         continue;
@@ -216,7 +266,7 @@ export function createLevel(rng: RngState, depth: number, firstItemId = 1): Leve
     const count = nextInt(state, range.min, range.max);
     state = count.rng;
     for (let i = 0; i < count.value; i++) {
-      const spot = randomRoomTile(state, map, taken, -1);
+      const spot = randomRoomTile(state, map, taken, false);
       state = spot.rng;
       if (spot.position === null) {
         continue;
@@ -237,7 +287,7 @@ export function createLevel(rng: RngState, depth: number, firstItemId = 1): Leve
     const count = nextInt(state, range.min, range.max);
     state = count.rng;
     for (let i = 0; i < count.value; i++) {
-      const spot = randomRoomTile(state, map, taken, spawnRoomIndex);
+      const spot = randomRoomTile(state, map, taken, true);
       state = spot.rng;
       if (spot.position === null) {
         continue;

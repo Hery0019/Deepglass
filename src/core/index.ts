@@ -12,6 +12,7 @@ export * from "./entity";
 export * from "./map/tiles";
 export * from "./map/dungeon";
 export * from "./map/generate";
+export * from "./map/cavern";
 export * from "./data/monsters";
 export * from "./data/items";
 export * from "./data/effects";
