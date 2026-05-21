@@ -6,9 +6,17 @@
 import { ITEM_LIST, type ItemDef } from "./data/items";
 import { BOSS_ID, MONSTERS, MONSTER_LIST, type MonsterDef } from "./data/monsters";
 import { TRAP_LIST, type TrapDef } from "./data/traps";
-import { type Point, chebyshevDistance, fromIndex, pointKey, rectCenter } from "./grid";
+import {
+  DIRECTIONS_8,
+  type Point,
+  addPoints,
+  chebyshevDistance,
+  fromIndex,
+  pointKey,
+  rectCenter,
+} from "./grid";
 import { farthestFloor, generateCavern } from "./map/cavern";
-import type { DungeonMap } from "./map/dungeon";
+import { type DungeonMap, isWalkableAt } from "./map/dungeon";
 import { generateMap } from "./map/generate";
 import { type RngState, chance, nextInt, pickWeighted } from "./rng";
 import { trapEntityFromDef } from "./systems/traps";
@@ -70,6 +78,7 @@ export function monsterFromDef(
     ...(def.preferredRange !== undefined ? { preferredRange: def.preferredRange } : {}),
     ...(def.erraticChance !== undefined ? { erraticChance: def.erraticChance } : {}),
     ...(def.onHit !== undefined ? { onHit: def.onHit } : {}),
+    ...(def.drop !== undefined ? { drop: def.drop } : {}),
     ...(def.id === BOSS_ID ? { isBoss: true } : {}),
   };
 }
@@ -236,6 +245,23 @@ export function createLevel(rng: RngState, depth: number, firstItemId = 1): Leve
     if (lair !== null) {
       taken.add(pointKey(lair));
       monsters.push(monsterFromDef(MONSTERS[BOSS_ID], lair));
+    }
+  }
+
+  // Guardians stand beside the stairs.
+  const stairs = map.stairsDown;
+  if (stairs !== undefined) {
+    for (const def of MONSTER_LIST) {
+      if (def.guardsStairs !== true || depth < def.minDepth || depth > def.maxDepth) {
+        continue;
+      }
+      const post = DIRECTIONS_8.map((d) => addPoints(stairs, d)).find(
+        (p) => isWalkableAt(map, p) && !taken.has(pointKey(p)),
+      );
+      if (post !== undefined) {
+        taken.add(pointKey(post));
+        monsters.push(monsterFromDef(def, post, depth));
+      }
     }
   }
 

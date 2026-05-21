@@ -116,8 +116,12 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
     }
     case "item-picked-up":
       return entry(`You pick up the ${ITEMS[event.item.defId].name}.`, "info");
-    case "item-dropped":
-      return entry(`You drop the ${ITEMS[event.item.defId].name}.`, "info");
+    case "item-dropped": {
+      const name = ITEMS[event.item.defId].name;
+      return event.entityId === before.playerId
+        ? entry(`You drop the ${name}.`, "info")
+        : entry(`${capitalize(nameOf(before, event.entityId))} leaves behind a ${name}.`, "good");
+    }
     case "item-used": {
       const def = ITEMS[event.item.defId];
       const verb = def.category === "scroll" ? "read" : def.category === "food" ? "eat" : "drink";

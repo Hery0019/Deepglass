@@ -4,10 +4,20 @@
  * and parameterized by the optional fields below.
  */
 
+import type { ItemId } from "./items";
 import type { AiBehaviour, OnHitStatus } from "../types";
 
 export type MonsterId =
-  "rat" | "bat" | "kobold" | "goblin-archer" | "cave-spider" | "orc" | "wraith" | "ogre" | "warden";
+  | "rat"
+  | "bat"
+  | "kobold"
+  | "goblin-archer"
+  | "cave-spider"
+  | "orc"
+  | "wraith"
+  | "ogre"
+  | "gatekeeper"
+  | "warden";
 
 export type MonsterDef = {
   readonly id: MonsterId;
@@ -44,6 +54,10 @@ export type MonsterDef = {
   readonly erraticChance?: number;
   /** Status inflicted when a melee hit lands. */
   readonly onHit?: OnHitStatus;
+  /** Placed next to the down staircase on every depth in its range, once per level. */
+  readonly guardsStairs?: boolean;
+  /** Item left on the floor when the monster dies. */
+  readonly drop?: ItemId;
 };
 
 export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
@@ -198,6 +212,26 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     minDepth: 7,
     maxDepth: 9,
     weight: 5,
+  },
+  gatekeeper: {
+    id: "gatekeeper",
+    name: "Gatekeeper",
+    glyph: "K",
+    color: "#d9d9e6",
+    description: "An armoured sentinel that lets nothing past the stairs it guards.",
+    health: 40,
+    attackMin: 4,
+    attackMax: 8,
+    accuracy: 0.8,
+    defence: 3,
+    behaviour: "chaser",
+    sightRadius: 5,
+    xpValue: 60,
+    minDepth: 5,
+    maxDepth: 5,
+    weight: 0,
+    guardsStairs: true,
+    drop: "chain-mail",
   },
   warden: {
     id: "warden",
