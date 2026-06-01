@@ -24,6 +24,7 @@ const KEY_MAP: readonly (readonly [string, string])[] = [
   ["+ / -", "zoom in / out (the page scrolls to follow you)"],
   ["0", "reset zoom"],
   ["Esc", "close any overlay"],
+  ["tap", "step, attack, shoot, or walk to a seen tile; tap yourself to wait"],
 ];
 
 const LEGEND: readonly (readonly [string, string])[] = [
@@ -37,7 +38,7 @@ const LEGEND: readonly (readonly [string, string])[] = [
 ];
 
 export function drawHelp(renderer: Renderer): void {
-  const box = centredBox(renderer, 76, 33);
+  const box = centredBox(renderer, 76, 34);
   drawFrame(renderer, box, "Help");
   const left = box.col + 3;
   let row = box.row + 2;

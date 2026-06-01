@@ -120,6 +120,10 @@ export function travelStep(state: GameState, goal: Point): AutoStep | null {
   if (pointsEqual(start, goal)) {
     return null;
   }
+  // The destination itself must be a known floor tile; a route may end on a monster, a wall may not.
+  if (!isExploredAt(state.map, goal) || !isPassableAt(state.map, goal)) {
+    return null;
+  }
   const path = findPath(start, goal, knownPassable(state), {
     width: state.map.width,
     height: state.map.height,
@@ -157,11 +161,18 @@ export function autoContinues(action: Action, before: GameState, result: TurnRes
       );
     case "explore":
     case "travel-to-stairs":
+    case "travel":
       // Stop on anything worth a look: an item underfoot, or the destination reached.
       if (entitiesAt(state, player.position).some((e) => e.kind === "item")) {
         return false;
       }
-      return action.type === "explore" ? exploreStep(state) !== null : !isOnStairs(state);
+      if (action.type === "explore") {
+        return exploreStep(state) !== null;
+      }
+      if (action.type === "travel") {
+        return !pointsEqual(player.position, action.goal);
+      }
+      return !isOnStairs(state);
     case "move":
     case "wait":
     case "descend":

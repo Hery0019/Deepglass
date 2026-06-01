@@ -26,6 +26,8 @@
         display: block;
         margin: 0 auto;
         image-rendering: pixelated;
+        /* Taps act at once: no double-tap zoom delay. Pinch zoom still works. */
+        touch-action: manipulation;
       }
     </style>
   </head>

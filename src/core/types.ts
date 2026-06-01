@@ -184,6 +184,8 @@ export type Action =
   | { readonly type: "explore" }
   /** One step toward the known down staircase. Repeated by the client. */
   | { readonly type: "travel-to-stairs" }
+  /** One step toward a chosen known tile. Repeated by the client. */
+  | { readonly type: "travel"; readonly goal: Point }
   /** Wait one turn to recover health. Repeated by the client. */
   | { readonly type: "rest" };
 
@@ -195,6 +197,7 @@ export type AutoRefusal =
   | "monster-in-view"
   | "nothing-to-explore"
   | "stairs-unknown"
+  | "no-route"
   | "already-there"
   | "full-health"
   | "poisoned";

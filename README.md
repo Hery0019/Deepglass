@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Hery0019/Deepglass/actions/workflows/ci.yml/badge.svg)](https://github.com/Hery0019/Deepglass/actions/workflows/ci.yml)
 
-A turn-based ASCII roguelike for the desktop browser. Descend eight procedurally
+A turn-based ASCII roguelike for the browser, playable with a keyboard or by touch. Descend eight procedurally
 generated levels of rooms and caverns, reach the ninth, and kill the Warden of
 the Deepglass. Death is
 permanent: there is no saving and no continuing.
@@ -84,6 +84,13 @@ monster on the level one action in return.
 | `+` / `-`                   | Zoom in / out; when the canvas outgrows the window the page scrolls to follow you |
 | `0`                         | Reset zoom                                                                        |
 | `Esc`                       | Close any overlay                                                                 |
+
+On a touch screen a toolbar of the main keys appears along the top edge. Tap an
+adjacent tile to step or attack, a visible monster in bow range to shoot it, a
+tile you have seen to walk there, or yourself to wait (or descend when standing
+on the stairs). In the examine and fire modes a tap moves the cursor and a
+second tap on the cursor confirms; in the pack a tap on a line uses or drops
+that item.
 
 Glyphs: `#` wall, `.` floor, `+` closed door, `'` open door, `>` stairs down,
 `^` a trap you know about, `!` potion, `?` scroll, `%` food, `)` weapon, `}` bow,

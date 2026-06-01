@@ -7,7 +7,7 @@
  */
 
 import { blockingEntityAt, findEntity, getPlayer, spawnEntity, updateEntity } from "./entity";
-import { DIRECTIONS_8, addPoints, pointsEqual } from "./grid";
+import { DIRECTIONS_8, type Point, addPoints, pointsEqual } from "./grid";
 import { FINAL_DEPTH, createLevel } from "./level";
 import { describeEvent } from "./messages";
 import { type RngState, pick, seedRng } from "./rng";
@@ -231,6 +231,21 @@ function resolveTravelToStairs(state: GameState): PhaseResult {
   return resolveMove(state, step.direction);
 }
 
+function resolveTravel(state: GameState, goal: Point): PhaseResult {
+  const refusal = monsterInView(state);
+  if (refusal !== null) {
+    return refusal;
+  }
+  if (pointsEqual(getPlayer(state).position, goal)) {
+    return refuse(state, "already-there");
+  }
+  const step = travelStep(state, goal);
+  if (step === null) {
+    return refuse(state, "no-route");
+  }
+  return resolveMove(state, step.direction);
+}
+
 function resolveRest(state: GameState): PhaseResult {
   const refusal = monsterInView(state);
   if (refusal !== null) {
@@ -279,6 +294,8 @@ function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
       return resolveExplore(state);
     case "travel-to-stairs":
       return resolveTravelToStairs(state);
+    case "travel":
+      return resolveTravel(state, action.goal);
     case "rest":
       return resolveRest(state);
   }
