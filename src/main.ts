@@ -21,7 +21,14 @@ import {
   isOnStairs,
 } from "./core/index";
 import { type UiMode, keyToCommand } from "./input/keyboard";
-import { HUD_ROWS, type Renderer, createRenderer, render } from "./render/renderer";
+import {
+  HUD_ROWS,
+  type Renderer,
+  createRenderer,
+  onMapScreen,
+  render,
+  toGrid,
+} from "./render/renderer";
 import { drawEndScreen } from "./ui/endscreen";
 import { drawExamine, examineTargets, fireTargets } from "./ui/examine";
 import { drawHelp } from "./ui/help";
@@ -31,8 +38,10 @@ import { type PointerCommand, tapToCommand } from "./input/pointer";
 import { TOOLBAR_ROW, drawToolbar, toolbarKeyAt } from "./ui/toolbar";
 import { drawMessageHistory, maxHistoryOffset } from "./ui/messages";
 
-/** Glyph cells never shrink below this, so small windows scroll instead of becoming unreadable. */
+/** Glyph cells never shrink below this; a small window shows a window onto the map instead. */
 const MIN_CELL_HEIGHT = 14;
+/** The map area never shrinks below this many rows, whatever the window. */
+const MIN_MAP_ROWS = 12;
 /** Width-to-height ratio of a monospace cell. */
 const CELL_ASPECT = 0.6;
 /** Zoom multipliers applied on top of the fit-to-window size; index 1 is the default. */
@@ -73,21 +82,15 @@ function computeCellSize(zoom: number): { readonly width: number; readonly heigh
   return { width: Math.round(height * CELL_ASPECT), height };
 }
 
+/** Show as much of the grid as fits the window at this cell size; the camera follows the player for the rest. */
 function buildRenderer(canvas: HTMLCanvasElement, zoom: number): Renderer {
   const cell = computeCellSize(zoom);
-  return createRenderer(canvas, GRID_WIDTH, GRID_HEIGHT, cell.width, cell.height);
-}
-
-/** When the canvas is larger than the window, scroll so the player stays centred. */
-function scrollToPlayer(canvas: HTMLCanvasElement, renderer: Renderer, state: GameState): void {
-  if (canvas.width <= window.innerWidth && canvas.height <= window.innerHeight) {
-    return;
-  }
-  const player = getPlayer(state);
-  const { cellWidth, cellHeight } = renderer.metrics;
-  const x = canvas.offsetLeft + (player.position.x + 0.5) * cellWidth;
-  const y = canvas.offsetTop + (player.position.y + 0.5) * cellHeight;
-  window.scrollTo(x - window.innerWidth / 2, y - window.innerHeight / 2);
+  const columns = Math.max(1, Math.min(GRID_WIDTH, Math.floor(window.innerWidth / cell.width)));
+  const mapRows = Math.max(
+    MIN_MAP_ROWS,
+    Math.min(GRID_HEIGHT, Math.floor(window.innerHeight / cell.height) - HUD_ROWS),
+  );
+  return createRenderer(canvas, columns, mapRows, cell.width, cell.height);
 }
 
 function main(): void {
@@ -128,7 +131,6 @@ function main(): void {
 
   const draw = (): void => {
     render(renderer, state, drawOverlay);
-    scrollToPlayer(canvas, renderer, state);
   };
 
   const rebuild = (): void => {
@@ -283,19 +285,23 @@ function main(): void {
       return;
     }
     const { cellWidth, cellHeight } = renderer.metrics;
-    const cell = {
+    const screen = {
       x: Math.floor(event.offsetX / cellWidth),
       y: Math.floor(event.offsetY / cellHeight),
     };
-    if (touch && cell.y === TOOLBAR_ROW) {
-      const key = toolbarKeyAt(cell.x);
+    if (touch && screen.y === TOOLBAR_ROW) {
+      const key = toolbarKeyAt(screen.x);
       if (key !== null) {
         handle({ kind: "key", key });
         return;
       }
     }
+    // Overlays are laid out in screen cells; the map is addressed in grid cells.
     const slot =
-      mode === "inventory" || mode === "drop" ? inventorySlotAt(renderer, state, cell) : null;
+      mode === "inventory" || mode === "drop" ? inventorySlotAt(renderer, state, screen) : null;
+    const cell = onMapScreen(renderer, screen)
+      ? toGrid(renderer, screen)
+      : { x: screen.x, y: state.map.height };
     handle(tapToCommand(state, mode, cell, cursor, slot));
   });
 

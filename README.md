@@ -66,24 +66,24 @@ npm run typecheck  # tsc --noEmit
 You are `@`. Walk into a monster to attack it. Every action you take gives every
 monster on the level one action in return.
 
-| Key                         | Effect                                                                            |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| Arrow keys, `h` `j` `k` `l` | Move west / south / north / east                                                  |
-| `y` `u` `b` `n`             | Move diagonally (north-west, north-east, south-west, south-east)                  |
-| `.` or `s`                  | Wait one turn                                                                     |
-| `>`                         | Descend when standing on `>`; otherwise walk to the stairs if you have seen them  |
-| `o`                         | Explore: walk toward unseen tiles until a monster or item shows up                |
-| `r`                         | Rest until fully healed, or until a monster appears                               |
-| `x`                         | Examine: move a cursor over the map; `Tab` cycles visible monsters, `Esc` leaves  |
-| `f`                         | Fire the readied bow: `Tab` cycles targets in range, `f` or `Enter` shoots        |
-| `g` or `,`                  | Pick up the item under you                                                        |
-| `i`                         | Open your pack, then press a slot letter (`a`–`j`) to use or equip                |
-| `d`                         | Drop an item: press `d`, then the slot letter                                     |
-| `m`                         | Message history; `Up` / `Down` or `PageUp` / `PageDown` scroll                    |
-| `?`                         | Toggle the help screen                                                            |
-| `+` / `-`                   | Zoom in / out; when the canvas outgrows the window the page scrolls to follow you |
-| `0`                         | Reset zoom                                                                        |
-| `Esc`                       | Close any overlay                                                                 |
+| Key                         | Effect                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| Arrow keys, `h` `j` `k` `l` | Move west / south / north / east                                                 |
+| `y` `u` `b` `n`             | Move diagonally (north-west, north-east, south-west, south-east)                 |
+| `.` or `s`                  | Wait one turn                                                                    |
+| `>`                         | Descend when standing on `>`; otherwise walk to the stairs if you have seen them |
+| `o`                         | Explore: walk toward unseen tiles until a monster or item shows up               |
+| `r`                         | Rest until fully healed, or until a monster appears                              |
+| `x`                         | Examine: move a cursor over the map; `Tab` cycles visible monsters, `Esc` leaves |
+| `f`                         | Fire the readied bow: `Tab` cycles targets in range, `f` or `Enter` shoots       |
+| `g` or `,`                  | Pick up the item under you                                                       |
+| `i`                         | Open your pack, then press a slot letter (`a`–`j`) to use or equip               |
+| `d`                         | Drop an item: press `d`, then the slot letter                                    |
+| `m`                         | Message history; `Up` / `Down` or `PageUp` / `PageDown` scroll                   |
+| `?`                         | Toggle the help screen                                                           |
+| `+` / `-`                   | Zoom in / out; when the map outgrows the window the view follows you             |
+| `0`                         | Reset zoom                                                                       |
+| `Esc`                       | Close any overlay                                                                |
 
 On a touch screen a toolbar of the main keys appears along the top edge. Tap an
 adjacent tile to step or attack, a visible monster in bow range to shoot it, a
