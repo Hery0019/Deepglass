@@ -15,9 +15,9 @@ import {
   ITEMS,
   type Item,
   type Point,
-  type TurnResult,
   applyAction,
   canShoot,
+  causeOfDeath,
   chebyshevDistance,
   createGame,
   entitiesAt,
@@ -378,19 +378,6 @@ const MAX_TURNS = 20000;
 /** Consecutive actions that cost no turn before the run is declared stuck. */
 const MAX_IDLE_ACTIONS = 50;
 
-function killerFrom(before: GameState, result: TurnResult): string | undefined {
-  const death = result.events.find(
-    (e) => e.type === "entity-died" && e.entityId === before.playerId,
-  );
-  if (death?.type === "entity-died" && death.killerId !== undefined) {
-    return before.entities.find((e) => e.id === death.killerId)?.name ?? "unknown";
-  }
-  const damage = [...result.events]
-    .reverse()
-    .find((e) => e.type === "entity-damaged" && e.entityId === before.playerId);
-  return damage?.type === "entity-damaged" ? damage.source : "unknown";
-}
-
 /** Play one full run from a seed and report how it ended. */
 export function runBot(seed: number, style: BotStyle = "explore"): RunOutcome {
   let state = createGame(seed);
@@ -403,7 +390,7 @@ export function runBot(seed: number, style: BotStyle = "explore"): RunOutcome {
     const result = applyAction(state, choice.action);
     idle = result.state.turn === state.turn ? idle + 1 : 0;
     if (result.state.status === "dead") {
-      killer = killerFrom(state, result);
+      killer = causeOfDeath(state, result);
     }
     state = result.state;
   }

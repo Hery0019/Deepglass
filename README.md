@@ -137,6 +137,12 @@ and three armour pieces with accuracy trade-offs, and two bows. A readied bow
 shoots any monster you can see within its range; a shot takes a turn and never
 carries a status. The pack holds ten items.
 
+### Best runs
+
+The death and victory screens list the best runs played in this browser:
+wins first, then by depth, kills, and turns. They are kept in local storage
+only. Press `n` or `Enter` there (or tap) to start a new run with a fresh seed.
+
 ### Seeds and replays
 
 Every run is driven by a single 32-bit seed. The seed is shown in the status bar
@@ -164,6 +170,7 @@ src/
   render/    reads state, draws it on the canvas, never mutates
   input/     keyboard events -> Action or UI command
   ui/        HUD, inventory, help, examine, message history, and end screens
+  client/    browser-side persistence (best runs in local storage)
   main.ts    wiring only
 tests/       Vitest suites for the core
 ```
