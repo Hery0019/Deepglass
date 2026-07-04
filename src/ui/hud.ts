@@ -46,6 +46,14 @@ function healthColor(current: number, max: number): string {
   return PALETTE.logBad;
 }
 
+/** A one-line notice across the top of the map, for replays. */
+export function drawBanner(renderer: Renderer, text: string): void {
+  const { cellWidth, cellHeight } = renderer.metrics;
+  renderer.context.fillStyle = PALETTE.hudFrame;
+  renderer.context.fillRect(0, cellHeight, renderer.columns * cellWidth, cellHeight);
+  drawText(renderer, 1, 1, text, PALETTE.hudText, renderer.columns - 2);
+}
+
 export function drawHud(renderer: Renderer, state: GameState): void {
   const mapRows = renderer.mapRows;
   const player = getPlayer(state);
