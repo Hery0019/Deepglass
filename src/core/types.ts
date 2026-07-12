@@ -167,6 +167,10 @@ export type GameState = {
   readonly log: readonly LogEntry[];
   readonly status: GameStatus;
   readonly stats: RunStats;
+  /** Kinds of potion and scroll the player has learned to recognize. */
+  readonly identified: readonly ItemId[];
+  /** What each unidentified kind looks like this run. */
+  readonly appearances: Readonly<Partial<Record<ItemId, string>>>;
 };
 
 /** Something the player wants to do. Produced by the input layer. */
@@ -236,6 +240,9 @@ export type GameEvent =
   | { readonly type: "item-picked-up"; readonly entityId: EntityId; readonly item: Item }
   | { readonly type: "item-dropped"; readonly entityId: EntityId; readonly item: Item }
   | { readonly type: "item-used"; readonly entityId: EntityId; readonly item: Item }
+  /** Using an unknown kind of item revealed what it is. */
+  | { readonly type: "item-identified"; readonly item: Item }
+  | { readonly type: "level-mapped" }
   | { readonly type: "item-equipped"; readonly entityId: EntityId; readonly item: Item }
   | { readonly type: "item-unequipped"; readonly entityId: EntityId; readonly item: Item }
   | { readonly type: "inventory-full"; readonly entityId: EntityId }

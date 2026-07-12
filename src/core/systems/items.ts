@@ -18,6 +18,8 @@ import type {
 import { applyDamage, isDead, resolveDeath } from "./combat";
 import { hasLineOfSight } from "./fov";
 import { feed } from "./hunger";
+import { identify, isIdentified } from "./identify";
+import { randomDestination } from "./traps";
 import { applyStatus, removeStatus } from "./status";
 
 export type ItemResult = {
@@ -226,7 +228,12 @@ export function useItem(state: GameState, slot: number): ItemResult {
     },
   }));
   const events: GameEvent[] = [{ type: "item-used", entityId: player.id, item }];
-  const applied = applyEffect(consumed, player.id, def);
+  let next = consumed;
+  if (!isIdentified(next, def.id)) {
+    next = identify(next, def.id);
+    events.push({ type: "item-identified", item });
+  }
+  const applied = applyEffect(next, player.id, def);
   return { state: applied.state, events: [...events, ...applied.events], tookTurn: true };
 }
 
@@ -252,6 +259,24 @@ function applyEffect(state: GameState, userId: number, def: ItemDef): EffectResu
   switch (effect.type) {
     case "feed":
       return feed(state, userId, effect.amount);
+    case "self-status":
+      return applyStatus(state, userId, effect.status, effect.turns);
+    case "teleport": {
+      const destination = randomDestination(state, user.position);
+      if (destination.to === null) {
+        return { state: destination.state, events: [] };
+      }
+      const to = destination.to;
+      return {
+        state: updateEntity(destination.state, userId, (e) => ({ ...e, position: to })),
+        events: [{ type: "entity-teleported", entityId: userId, to }],
+      };
+    }
+    case "map":
+      return {
+        state: { ...state, map: { ...state.map, explored: state.map.explored.map(() => true) } },
+        events: [{ type: "level-mapped" }],
+      };
     case "heal": {
       let next = state;
       const events: GameEvent[] = [];

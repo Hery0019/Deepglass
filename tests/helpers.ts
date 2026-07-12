@@ -8,6 +8,7 @@
 import type { Point } from "../src/core/grid";
 import type { DungeonMap } from "../src/core/map/dungeon";
 import type { TileType } from "../src/core/map/tiles";
+import { ITEM_LIST } from "../src/core/data/items";
 import { seedRng } from "../src/core/rng";
 import { createPlayer } from "../src/core/turn";
 import type { Entity, GameState } from "../src/core/types";
@@ -111,5 +112,8 @@ export function stateFromStrings(
     log: [],
     status: "playing",
     stats: { kills: 0, maxDepth: 1 },
+    // Hand-built states know every item, so tests read plain names unless they say otherwise.
+    identified: ITEM_LIST.map((def) => def.id),
+    appearances: {},
   };
 }

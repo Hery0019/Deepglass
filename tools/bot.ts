@@ -14,6 +14,7 @@ import {
   type GameState,
   ITEMS,
   type Item,
+  type ItemId,
   type Point,
   applyAction,
   canShoot,
@@ -31,6 +32,7 @@ import {
   hasStatus,
   hungerLevel,
   isExploredAt,
+  isIdentified,
   isOnStairs,
   isWalkableAt,
   knownPassable,
@@ -80,6 +82,12 @@ function weaponScore(item: Item): number {
 function bowScore(item: Item): number {
   const stats = ITEMS[item.defId].bow;
   return stats === undefined ? 0 : ((stats.min + stats.max) / 2) * (0.85 + stats.accuracyBonus);
+}
+
+/** Slot of the best known healing potion, or -1. */
+function bestHealing(state: GameState, player: Entity): number {
+  const vigour = knownSlot(state, player, "vigour-potion");
+  return vigour !== -1 ? vigour : knownSlot(state, player, "health-potion");
 }
 
 function armourScore(item: Item): number {
@@ -164,9 +172,14 @@ function stepToward(state: GameState, goal: Point): Action | null {
   };
 }
 
+/** Slot of a known item of this kind; unknown potions and scrolls do not count. */
+function knownSlot(state: GameState, player: Entity, defId: ItemId): number {
+  return isIdentified(state, defId) ? slotOf(player, (i) => i.defId === defId) : -1;
+}
+
 function fight(state: GameState, player: Entity, monsters: readonly Entity[]): Action {
   const ratio = healthRatio(player);
-  const potion = slotOf(player, (i) => i.defId === "health-potion");
+  const potion = bestHealing(state, player);
   if (ratio < DRINK_BELOW && potion !== -1) {
     return { type: "use-item", slot: potion };
   }
@@ -174,11 +187,11 @@ function fight(state: GameState, player: Entity, monsters: readonly Entity[]): A
     (m) => chebyshevDistance(m.position, player.position) <= FLAME_RADIUS,
   );
   const adjacent = monsters.filter((m) => chebyshevDistance(m.position, player.position) <= 1);
-  const flame = slotOf(player, (i) => i.defId === "scroll-of-flame");
+  const flame = knownSlot(state, player, "scroll-of-flame");
   if (flame !== -1 && (near.length >= 2 || (adjacent.length > 0 && ratio < 0.5))) {
     return { type: "use-item", slot: flame };
   }
-  const bewilder = slotOf(player, (i) => i.defId === "scroll-of-bewilderment");
+  const bewilder = knownSlot(state, player, "scroll-of-bewilderment");
   if (bewilder !== -1 && adjacent.length > 0 && ratio < 0.4 && potion === -1) {
     return { type: "use-item", slot: bewilder };
   }
@@ -315,9 +328,14 @@ export function chooseAction(state: GameState, memory: BotMemory, style: BotStyl
   }
 
   const ratio = healthRatio(player);
-  const potion = slotOf(player, (i) => i.defId === "health-potion");
+  const potion = bestHealing(state, player);
   if (hasStatus(player, "poison") && ratio < 0.5 && potion !== -1) {
     return keep({ type: "use-item", slot: potion });
+  }
+  // Nothing in view and in decent shape: try an unknown potion or scroll to learn what it is.
+  const unknown = slotOf(player, (i) => !isIdentified(state, i.defId));
+  if (unknown !== -1 && ratio >= 0.6 && !hasStatus(player, "poison")) {
+    return keep({ type: "use-item", slot: unknown });
   }
   const hunger = hungerLevel(player);
   const food = slotOf(player, (i) => ITEMS[i.defId].category === "food");

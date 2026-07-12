@@ -16,6 +16,8 @@ import {
   getPlayer,
   isExploredAt,
   isVisibleAt,
+  itemDescription,
+  itemName,
   tileAt,
 } from "../core/index";
 import { PALETTE } from "../render/palette";
@@ -65,7 +67,11 @@ export function examineAt(state: GameState, cursor: Point): Examined {
     const floorItem = here.find((e) => e.kind === "item");
     if (floorItem?.item !== undefined) {
       const def = ITEMS[floorItem.item.defId];
-      return { title: def.name, detail: def.description, color: def.color };
+      return {
+        title: itemName(state, floorItem.item),
+        detail: itemDescription(state, floorItem.item),
+        color: def.color,
+      };
     }
   }
   const trap = entitiesAt(state, cursor).find((e) => e.trap !== undefined && !e.trap.hidden);

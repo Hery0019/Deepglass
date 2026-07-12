@@ -8,6 +8,7 @@ import { ITEMS } from "./data/items";
 import { TRAPS } from "./data/traps";
 import { findEntity } from "./entity";
 import { isVisibleAt } from "./map/dungeon";
+import { itemName } from "./systems/identify";
 import type { HungerLevel } from "./systems/hunger";
 import type { AutoRefusal, GameEvent, GameState, LogEntry, LogTone } from "./types";
 
@@ -117,9 +118,9 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
       );
     }
     case "item-picked-up":
-      return entry(`You pick up the ${ITEMS[event.item.defId].name}.`, "info");
+      return entry(`You pick up the ${itemName(before, event.item)}.`, "info");
     case "item-dropped": {
-      const name = ITEMS[event.item.defId].name;
+      const name = itemName(before, event.item);
       return event.entityId === before.playerId
         ? entry(`You drop the ${name}.`, "info")
         : entry(`${capitalize(nameOf(before, event.entityId))} leaves behind a ${name}.`, "good");
@@ -127,8 +128,12 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
     case "item-used": {
       const def = ITEMS[event.item.defId];
       const verb = def.category === "scroll" ? "read" : def.category === "food" ? "eat" : "drink";
-      return entry(`You ${verb} the ${def.name}.`, "info");
+      return entry(`You ${verb} the ${itemName(before, event.item)}.`, "info");
     }
+    case "item-identified":
+      return entry(`It was a ${ITEMS[event.item.defId].name}.`, "good");
+    case "level-mapped":
+      return entry("The layout of this level fills your mind.", "good");
     case "item-equipped": {
       const def = ITEMS[event.item.defId];
       const verb =

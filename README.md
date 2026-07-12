@@ -131,8 +131,10 @@ and poison on hit; kobolds run away when wounded, recover out of sight, and come
 back. Monsters pursue only while they can see you, then head for where they last
 saw you, then give up.
 
-Items: food ration, health potion (heals and cures poison), scroll of flame (burns everything
-near you), scroll of bewilderment (confuses everything near you), three weapons
+Items: food ration, health potion (heals and cures poison), potion of vigour
+(heals more and cures confusion too), potion of poison, scroll of flame (burns
+everything near you), scroll of bewilderment (confuses everything near you),
+scroll of teleportation, scroll of mapping, three weapons
 and three armour pieces with accuracy trade-offs, and two bows. A readied bow
 shoots any monster you can see within its range; a shot takes a turn and never
 carries a status. The pack holds ten items.
@@ -142,6 +144,15 @@ carries a status. The pack holds ten items.
 The death and victory screens list the best runs played in this browser:
 wins first, then by depth, kills, and turns. They are kept in local storage
 only. Press `n` or `Enter` there (or tap) to start a new run with a fresh seed.
+
+### Unidentified items
+
+Potions and scrolls are unknown at the start of a run: a potion shows only
+its colour ("murky potion") and a scroll only its label ("scroll labelled
+XORTH"). Which look belongs to which kind is rolled from the seed. Using one
+reveals its kind for the rest of the run ("It was a potion of poison."), and
+every other item of that kind is then shown by its real name. Food, weapons,
+bows, and armour are always known.
 
 ### Seeds and replays
 
@@ -266,7 +277,8 @@ union. Consumables carry an `effect`; equipment carries `weapon` or `armour`:
 ```
 
 Effect types available today: `heal` (with a list of statuses to cure), `feed`,
-`area-damage`, and `area-status`. A new effect type is a new case in
+`self-status`, `teleport`, `map`, `area-damage`, and `area-status`. Potions and
+scrolls are unidentified until used; other categories are always known. A new effect type is a new case in
 `applyEffect` in `src/core/systems/items.ts`.
 
 ### A new status effect
