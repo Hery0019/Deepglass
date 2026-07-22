@@ -74,7 +74,7 @@ export function drawEndScreen(
     renderer,
     left,
     row,
-    "Death is permanent. Press n or Enter for a new run.",
+    "Death is permanent. n or Enter: new run. c: copy the replay link.",
     PALETTE.hudDim,
     box.width - 6,
   );
