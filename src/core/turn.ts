@@ -6,7 +6,14 @@
  * It is pure and deterministic: identical inputs produce identical outputs.
  */
 
-import { blockingEntityAt, findEntity, getPlayer, spawnEntity, updateEntity } from "./entity";
+import {
+  blockingEntityAt,
+  entitiesAt,
+  findEntity,
+  getPlayer,
+  spawnEntity,
+  updateEntity,
+} from "./entity";
 import { DIRECTIONS_8, type Point, addPoints, pointsEqual } from "./grid";
 import { FINAL_DEPTH, createLevel } from "./level";
 import { describeEvent } from "./messages";
@@ -119,7 +126,16 @@ function appendLog(before: GameState, state: GameState, events: readonly GameEve
   if (entries.length === 0) {
     return state;
   }
-  const log = [...state.log, ...entries];
+  // A line repeated back to back is counted rather than printed again.
+  const log = [...state.log];
+  for (const entry of entries) {
+    const last = log[log.length - 1];
+    if (last?.text === entry.text && last.tone === entry.tone) {
+      log[log.length - 1] = { ...last, turn: entry.turn, count: (last.count ?? 1) + 1 };
+    } else {
+      log.push(entry);
+    }
+  }
   return { ...state, log: log.length > MAX_LOG_ENTRIES ? log.slice(-MAX_LOG_ENTRIES) : log };
 }
 
@@ -153,7 +169,14 @@ function resolveMove(state: GameState, requested: Entity["position"]): PhaseResu
     return { state: result.state, events: result.events, tookTurn: opened || scrambled };
   }
   const trap = triggerTrapUnderPlayer(result.state);
-  return { state: trap.state, events: [...result.events, ...trap.events], tookTurn: true };
+  const events: GameEvent[] = [...result.events, ...trap.events];
+  const arrived = getPlayer(trap.state);
+  const here = entitiesAt(trap.state, arrived.position).filter((e) => e.item !== undefined);
+  const first = here[0]?.item;
+  if (first !== undefined) {
+    events.push({ type: "item-seen", item: first, count: here.length });
+  }
+  return { state: trap.state, events, tookTurn: true };
 }
 
 /**
