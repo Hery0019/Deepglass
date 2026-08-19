@@ -105,8 +105,8 @@ describe("hunger", () => {
     };
     const result = applyAction(state, { type: "use-item", slot: 0 });
     expect(getPlayer(result.state).inventory?.items).toEqual([]);
-    // 800 eaten, one turn of hunger ticked.
-    expect(getPlayer(result.state).hunger?.current).toBe(849);
+    // 1000 eaten, one turn of hunger ticked.
+    expect(getPlayer(result.state).hunger?.current).toBe(1049);
     expect(result.state.log.some((l) => l.text === "You eat the food ration.")).toBe(true);
   });
 });

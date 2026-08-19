@@ -219,7 +219,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     glyph: "K",
     color: "#d9d9e6",
     description: "An armoured sentinel that lets nothing past the stairs it guards.",
-    health: 40,
+    health: 34,
     attackMin: 4,
     attackMax: 8,
     accuracy: 0.8,
