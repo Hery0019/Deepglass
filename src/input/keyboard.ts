@@ -151,17 +151,13 @@ export function keyToCommand(key: string, mode: UiMode): InputCommand | null {
         default:
           return null;
       }
+    // Slot letters include i and d; using an empty slot does nothing but closes the overlay,
+    // so pressing the opening key again still closes it when that slot is empty.
     case "inventory": {
-      if (key === "i") {
-        return { kind: "ui", command: { type: "close" } };
-      }
       const slot = slotFromKey(key);
       return slot === null ? null : { kind: "action", action: { type: "use-item", slot } };
     }
     case "drop": {
-      if (key === "d") {
-        return { kind: "ui", command: { type: "close" } };
-      }
       const slot = slotFromKey(key);
       return slot === null ? null : { kind: "action", action: { type: "drop-item", slot } };
     }
