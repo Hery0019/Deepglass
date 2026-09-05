@@ -56,6 +56,8 @@ function playModeCommand(key: string): InputCommand | null {
     case ".":
     case "s":
       return { kind: "action", action: { type: "wait" } };
+    case ">":
+      return { kind: "action", action: { type: "descend" } };
     case "g":
     case ",":
       return { kind: "action", action: { type: "pick-up" } };

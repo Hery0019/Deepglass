@@ -64,6 +64,10 @@ export function resolveDeath(
     return { state: { ...state, status: "dead" }, events };
   }
   let next = removeEntity(state, victim.id);
+  if (victim.isBoss === true) {
+    next = { ...next, status: "won" };
+    events.push({ type: "game-won" });
+  }
   if (killerId === state.playerId) {
     next = { ...next, stats: { ...next.stats, kills: next.stats.kills + 1 } };
     const xp = victim.xpValue ?? 0;

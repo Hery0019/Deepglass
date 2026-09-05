@@ -22,7 +22,25 @@ export type LevelResult = {
   readonly nextItemId: number;
 };
 
-export function monsterFromDef(def: MonsterDef, position: Point): Omit<Entity, "id"> {
+/**
+ * Extra health and damage a monster gains for appearing deeper than the
+ * shallowest level it can spawn on. Keeps early monsters relevant later.
+ */
+export function depthScaling(
+  def: MonsterDef,
+  depth: number,
+): { readonly health: number; readonly damage: number } {
+  const extra = Math.max(0, depth - def.minDepth);
+  return { health: extra, damage: Math.floor(extra / 3) };
+}
+
+export function monsterFromDef(
+  def: MonsterDef,
+  position: Point,
+  depth = def.minDepth,
+): Omit<Entity, "id"> {
+  const scaling = depthScaling(def, depth);
+  const health = def.health + scaling.health;
   return {
     kind: "monster",
     name: def.name,
@@ -30,8 +48,12 @@ export function monsterFromDef(def: MonsterDef, position: Point): Omit<Entity, "
     color: def.color,
     position,
     blocksMovement: true,
-    health: { current: def.health, max: def.health },
-    attack: { min: def.attackMin, max: def.attackMax, accuracy: def.accuracy },
+    health: { current: health, max: health },
+    attack: {
+      min: def.attackMin + scaling.damage,
+      max: def.attackMax + scaling.damage,
+      accuracy: def.accuracy,
+    },
     defence: def.defence,
     ai: { behaviour: def.behaviour },
     sightRadius: def.sightRadius,
@@ -168,7 +190,7 @@ export function createLevel(rng: RngState, depth: number, firstItemId = 1): Leve
       const def = pickWeighted(state, table);
       state = def.rng;
       taken.add(pointKey(spot.position));
-      monsters.push(monsterFromDef(def.value, spot.position));
+      monsters.push(monsterFromDef(def.value, spot.position, depth));
     }
   }
 

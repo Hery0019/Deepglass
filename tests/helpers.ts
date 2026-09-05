@@ -107,6 +107,6 @@ export function stateFromStrings(
     nextItemId: 1,
     log: [],
     status: "playing",
-    stats: { kills: 0 },
+    stats: { kills: 0, maxDepth: 1 },
   };
 }

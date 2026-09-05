@@ -20,6 +20,7 @@ export * from "./systems/fov";
 export * from "./systems/combat";
 export * from "./systems/status";
 export * from "./systems/items";
+export * from "./systems/progression";
 export * from "./systems/pathfinding";
 export * from "./systems/ai";
 export * from "./messages";

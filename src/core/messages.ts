@@ -122,6 +122,14 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
         isPlayer ? "good" : "info",
       );
     }
+    case "level-descended":
+      return entry(`You descend to depth ${String(event.depth)}.`, "system");
+    case "no-stairs-here":
+      return entry("There are no stairs here.", "info");
+    case "player-levelled-up":
+      return entry(`Welcome to level ${String(event.level)}! You feel stronger.`, "good");
+    case "game-won":
+      return entry("The Warden falls. The Deepglass is yours.", "good");
     case "entity-moved":
     case "entity-blocked":
       return null;
