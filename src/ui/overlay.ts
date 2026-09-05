@@ -14,11 +14,13 @@ export type Box = {
 
 /** A centred box of the given size, in grid cells. */
 export function centredBox(renderer: Renderer, width: number, height: number): Box {
+  const w = Math.min(width, renderer.columns);
+  const h = Math.min(height, renderer.rows);
   return {
-    col: Math.max(0, Math.floor((renderer.columns - width) / 2)),
-    row: Math.max(0, Math.floor((renderer.rows - height) / 2)),
-    width,
-    height,
+    col: Math.max(0, Math.floor((renderer.columns - w) / 2)),
+    row: Math.max(0, Math.floor((renderer.rows - h) / 2)),
+    width: w,
+    height: h,
   };
 }
 

@@ -19,7 +19,7 @@ import {
   tileAt,
 } from "../core/index";
 import { PALETTE } from "../render/palette";
-import { type Renderer, drawGlyph, drawText } from "../render/renderer";
+import { type Renderer, drawGlyph, drawText, onMapScreen, toScreen } from "../render/renderer";
 import { drawFrame } from "./overlay";
 
 export type Examined = {
@@ -117,8 +117,12 @@ export function drawExamine(
   const { context } = renderer;
 
   // Highlight the cursor cell by inverting it.
+  const s = toScreen(renderer, cursor);
+  if (!onMapScreen(renderer, s)) {
+    return;
+  }
   context.fillStyle = PALETTE.hudText;
-  context.fillRect(cursor.x * cellWidth, cursor.y * cellHeight, cellWidth, cellHeight);
+  context.fillRect(s.x * cellWidth, s.y * cellHeight, cellWidth, cellHeight);
   const here = entitiesAt(state, cursor);
   const knownTrap = here.find((e) => e.trap !== undefined && !e.trap.hidden);
   const shown = isVisibleAt(state.map, cursor)
@@ -130,14 +134,14 @@ export function drawExamine(
   const glyph =
     shown?.glyph ??
     (isExploredAt(state.map, cursor) ? TILES[tileAt(state.map, cursor)].glyph : " ");
-  drawGlyph(renderer, cursor.x, cursor.y, glyph, PALETTE.background);
+  drawGlyph(renderer, s.x, s.y, glyph, PALETTE.background);
 
   // Describe it in a box placed on whichever half of the map the cursor is not in.
   const info = examineAt(state, cursor);
   const box = {
     col: Math.max(0, Math.floor((renderer.columns - BOX_WIDTH) / 2)),
-    row: cursor.y < state.map.height / 2 ? state.map.height - BOX_HEIGHT - 1 : 1,
-    width: BOX_WIDTH,
+    row: s.y < renderer.mapRows / 2 ? renderer.mapRows - BOX_HEIGHT - 1 : 1,
+    width: Math.min(BOX_WIDTH, renderer.columns),
     height: BOX_HEIGHT,
   };
   drawFrame(renderer, box, title);

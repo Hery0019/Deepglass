@@ -47,7 +47,7 @@ function healthColor(current: number, max: number): string {
 }
 
 export function drawHud(renderer: Renderer, state: GameState): void {
-  const mapRows = state.map.height;
+  const mapRows = renderer.mapRows;
   const player = getPlayer(state);
 
   // Row 1: vitals.
@@ -59,9 +59,15 @@ export function drawHud(renderer: Renderer, state: GameState): void {
   const attack = effectiveAttack(player);
   const statsText = `Atk ${String(attack.min)}-${String(attack.max)}  Def ${String(effectiveDefence(player))}`;
   const middle = `${levelText}  ${statsText}  Depth ${String(state.depth)}  Turn ${String(state.turn)}`;
-  drawText(renderer, hpText.length + 3, mapRows, middle, PALETTE.hudText);
   const seedText = `Seed ${String(state.seed)}`;
-  drawText(renderer, renderer.columns - seedText.length - 1, mapRows, seedText, PALETTE.hudDim);
+  // On a narrow screen the seed gives way to the vitals.
+  const seedCol = renderer.columns - seedText.length - 1;
+  const middleCol = hpText.length + 3;
+  const roomForSeed = seedCol - middleCol - middle.length >= 2;
+  drawText(renderer, middleCol, mapRows, middle, PALETTE.hudText, renderer.columns - middleCol - 1);
+  if (roomForSeed) {
+    drawText(renderer, seedCol, mapRows, seedText, PALETTE.hudDim);
+  }
 
   // Row 2: equipment and statuses.
   const weapon = equippedWeapon(player);

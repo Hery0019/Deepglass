@@ -21,7 +21,7 @@ const KEY_MAP: readonly (readonly [string, string])[] = [
   ["d", "drop an item; press a letter to choose"],
   ["m", "message history; Up / Down scroll"],
   ["?", "toggle this help"],
-  ["+ / -", "zoom in / out (the page scrolls to follow you)"],
+  ["+ / -", "zoom in / out (the view follows you)"],
   ["0", "reset zoom"],
   ["Esc", "close any overlay"],
   ["tap", "step, attack, shoot, or walk to a seen tile; tap yourself to wait"],

@@ -3,8 +3,8 @@
  * This module never mutates the state.
  */
 
-import type { GameState } from "../core/index";
-import { TILES, isExploredAt, isVisibleAt, tileAt } from "../core/index";
+import type { GameState, Point } from "../core/index";
+import { TILES, getPlayer, isExploredAt, isVisibleAt, tileAt } from "../core/index";
 import { PALETTE } from "./palette";
 
 export type RenderMetrics = {
@@ -18,8 +18,12 @@ export type RenderMetrics = {
 export type Renderer = {
   readonly metrics: RenderMetrics;
   readonly context: CanvasRenderingContext2D;
+  /** Screen size in cells: the whole canvas, and the part above the HUD. */
   readonly columns: number;
   readonly rows: number;
+  readonly mapRows: number;
+  /** Grid cell shown in the top-left corner of the map area; updated by `render`. */
+  readonly camera: { x: number; y: number };
 };
 
 export const HUD_ROWS = 7;
@@ -42,6 +46,8 @@ export function createRenderer(
     context,
     columns,
     rows,
+    mapRows,
+    camera: { x: 0, y: 0 },
     metrics: {
       cellWidth,
       cellHeight,
@@ -57,7 +63,22 @@ function setFont(renderer: Renderer): void {
   renderer.context.textAlign = "center";
 }
 
-/** Draw a single glyph in grid cell (col, row). */
+/** Screen cell showing grid point `p`; may lie outside the map area when `p` is off screen. */
+export function toScreen(renderer: Renderer, p: Point): Point {
+  return { x: p.x - renderer.camera.x, y: p.y - renderer.camera.y };
+}
+
+/** Grid point shown at screen cell `s`. */
+export function toGrid(renderer: Renderer, s: Point): Point {
+  return { x: s.x + renderer.camera.x, y: s.y + renderer.camera.y };
+}
+
+/** Whether a screen cell lies inside the map area. */
+export function onMapScreen(renderer: Renderer, s: Point): boolean {
+  return s.x >= 0 && s.y >= 0 && s.x < renderer.columns && s.y < renderer.mapRows;
+}
+
+/** Draw a single glyph in screen cell (col, row). */
 export function drawGlyph(
   renderer: Renderer,
   col: number,
@@ -112,17 +133,35 @@ function tileColor(type: keyof typeof TILES, visible: boolean): string {
   }
 }
 
+/** Keep the player centred when the map is larger than the screen, without showing beyond its edges. */
+function aimCamera(renderer: Renderer, state: GameState): void {
+  const { map } = state;
+  const player = getPlayer(state);
+  const clamp = (value: number, max: number): number => Math.max(0, Math.min(max, value));
+  renderer.camera.x = clamp(
+    player.position.x - Math.floor(renderer.columns / 2),
+    map.width - renderer.columns,
+  );
+  renderer.camera.y = clamp(
+    player.position.y - Math.floor(renderer.mapRows / 2),
+    map.height - renderer.mapRows,
+  );
+}
+
 function drawMap(renderer: Renderer, state: GameState): void {
   const { map } = state;
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      const p = { x, y };
+  for (let sy = 0; sy < renderer.mapRows; sy++) {
+    for (let sx = 0; sx < renderer.columns; sx++) {
+      const p = toGrid(renderer, { x: sx, y: sy });
+      if (p.x >= map.width || p.y >= map.height) {
+        continue;
+      }
       const visible = isVisibleAt(map, p);
       if (!visible && !isExploredAt(map, p)) {
         continue;
       }
       const type = tileAt(map, p);
-      drawGlyph(renderer, x, y, TILES[type].glyph, tileColor(type, visible));
+      drawGlyph(renderer, sx, sy, TILES[type].glyph, tileColor(type, visible));
     }
   }
 }
@@ -143,7 +182,11 @@ function drawEntities(renderer: Renderer, state: GameState): void {
     if (!shown) {
       continue;
     }
-    drawGlyph(renderer, entity.position.x, entity.position.y, entity.glyph, entity.color);
+    const s = toScreen(renderer, entity.position);
+    if (!onMapScreen(renderer, s)) {
+      continue;
+    }
+    drawGlyph(renderer, s.x, s.y, entity.glyph, entity.color);
   }
 }
 
@@ -155,6 +198,7 @@ export function render(
 ): void {
   clear(renderer);
   setFont(renderer);
+  aimCamera(renderer, state);
   drawMap(renderer, state);
   drawEntities(renderer, state);
   drawOverlay(renderer, state);
