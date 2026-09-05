@@ -29,7 +29,7 @@ const LEGEND: readonly (readonly [string, string])[] = [
 ];
 
 export function drawHelp(renderer: Renderer): void {
-  const box = centredBox(renderer, 66, 26);
+  const box = centredBox(renderer, 76, 26);
   drawFrame(renderer, box, "Help");
   const left = box.col + 3;
   let row = box.row + 2;

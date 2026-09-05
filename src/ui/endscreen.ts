@@ -14,7 +14,7 @@ export function drawEndScreen(renderer: Renderer, state: GameState): void {
     return;
   }
   const won = state.status === "won";
-  const box = centredBox(renderer, 50, 14);
+  const box = centredBox(renderer, 64, 14);
   drawFrame(renderer, box, won ? "Victory" : "You died");
   const left = box.col + 3;
   let row = box.row + 2;

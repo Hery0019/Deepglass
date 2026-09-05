@@ -8,6 +8,28 @@ The game is written in TypeScript with no runtime dependencies. Rendering is
 ASCII glyphs on a Canvas 2D context; the rules engine is pure, deterministic,
 and runs without a browser.
 
+## Screenshots
+
+All captures come from real runs of the build in this repository, driven by a
+scripted player through a headless browser. Seed 7 is a winning run; seed 20
+dies to the Warden.
+
+| Depth 1, turn 0 (`?seed=7`)                                                         | Help screen                                                         |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| ![The first room, lit by the player's field of view](docs/screenshots/01-start.png) | ![The help overlay listing every key](docs/screenshots/02-help.png) |
+
+| First fight                                                           | Depth 5                                                            |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| ![Killing a cave bat with bare hands](docs/screenshots/03-combat.png) | ![Explored corridors shown dimmed](docs/screenshots/04-depth5.png) |
+
+| Depth 9                                                        | Inventory                                                                           |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| ![Arriving on the final level](docs/screenshots/05-depth9.png) | ![A full pack with wielded and worn gear marked](docs/screenshots/06-inventory.png) |
+
+| Victory (seed 7)                                                                 | Death (seed 20)                                                        |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ![The victory summary after killing the Warden](docs/screenshots/07-victory.png) | ![The death summary on the final level](docs/screenshots/08-death.png) |
+
 ## Running it
 
 Requirements: Node 20 or newer and npm.

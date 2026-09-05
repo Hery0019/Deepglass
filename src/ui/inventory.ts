@@ -14,7 +14,7 @@ export function drawInventory(renderer: Renderer, state: GameState, dropping: bo
   const player = getPlayer(state);
   const items = player.inventory?.items ?? [];
   const capacity = player.inventory?.capacity ?? 0;
-  const box = centredBox(renderer, 56, capacity + 6);
+  const box = centredBox(renderer, 78, capacity + 6);
   drawFrame(renderer, box, dropping ? "Drop which item?" : "Inventory");
 
   const left = box.col + 2;
