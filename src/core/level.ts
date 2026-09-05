@@ -98,12 +98,12 @@ export function monsterCountForDepth(depth: number): {
   readonly min: number;
   readonly max: number;
 } {
-  return { min: 4 + depth, max: 7 + depth * 2 };
+  return { min: 3 + Math.floor(depth / 2), max: 5 + depth };
 }
 
 /** Number of items to place on a level. */
 export function itemCountForDepth(depth: number): { readonly min: number; readonly max: number } {
-  return { min: 3, max: 5 + Math.floor(depth / 2) };
+  return { min: 4, max: 6 + Math.floor(depth / 2) };
 }
 
 /** Pick a random floor tile inside a room that is not already taken. */

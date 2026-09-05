@@ -19,7 +19,7 @@ export function xpForLevel(level: number): number {
 }
 
 export const LEVEL_UP_GAINS = {
-  maxHealth: 5,
+  maxHealth: 6,
   attackMin: 1,
   attackMax: 1,
   /** Defence rises every N levels. */

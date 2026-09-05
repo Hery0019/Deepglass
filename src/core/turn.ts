@@ -6,7 +6,7 @@
  * It is pure and deterministic: identical inputs produce identical outputs.
  */
 
-import { blockingEntityAt, getPlayer, spawnEntity } from "./entity";
+import { blockingEntityAt, getPlayer, spawnEntity, updateEntity } from "./entity";
 import { DIRECTIONS_8, addPoints, pointsEqual } from "./grid";
 import { FINAL_DEPTH, createLevel } from "./level";
 import { describeEvent } from "./messages";
@@ -23,7 +23,7 @@ import type { Action, Entity, GameEvent, GameState, LogEntry, TurnResult } from 
 export const PLAYER_ID = 1;
 
 export const PLAYER_BASE = {
-  health: 20,
+  health: 30,
   attackMin: 2,
   attackMax: 5,
   accuracy: 0.85,
@@ -194,6 +194,28 @@ function resolveMonsterPhase(state: GameState): PhaseResult {
   return { state: next, events, tookTurn: true };
 }
 
+/** Turns between each point of natural healing. Poison suspends it. */
+export const REGEN_INTERVAL = 8;
+
+/** Slow natural healing so a cautious player can recover between fights. */
+function regenerate(state: GameState): GameState {
+  if ((state.turn + 1) % REGEN_INTERVAL !== 0) {
+    return state;
+  }
+  const player = getPlayer(state);
+  if (player.health === undefined || player.health.current >= player.health.max) {
+    return state;
+  }
+  if (player.statuses?.some((s) => s.id === "poison") === true) {
+    return state;
+  }
+  return updateEntity(state, player.id, (p) =>
+    p.health === undefined
+      ? p
+      : { ...p, health: { ...p.health, current: Math.min(p.health.max, p.health.current + 1) } },
+  );
+}
+
 /** Recompute the player's field of view after everything has moved. */
 function refreshPlayerVision(state: GameState): GameState {
   const player = getPlayer(state);
@@ -223,6 +245,10 @@ export function applyAction(state: GameState, action: Action): TurnResult {
     const statusPhase = tickAllStatuses(next);
     next = statusPhase.state;
     events.push(...statusPhase.events);
+  }
+
+  if (next.status === "playing") {
+    next = regenerate(next);
   }
 
   // Experience earned this turn may raise the player's level, even on the winning blow.
