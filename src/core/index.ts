@@ -13,4 +13,5 @@ export * from "./map/tiles";
 export * from "./map/dungeon";
 export * from "./map/generate";
 export * from "./systems/movement";
+export * from "./systems/fov";
 export * from "./turn";
