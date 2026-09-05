@@ -5,4 +5,5 @@
  * globals. This module re-exports what the rest of the application needs.
  */
 
-export const CORE_VERSION = "0.1.0";
+export * from "./rng";
+export * from "./grid";
