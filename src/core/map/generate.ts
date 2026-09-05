@@ -27,6 +27,8 @@ export type GenerateOptions = {
   /** The final level has no down staircase. */
   readonly withStairsDown?: boolean;
   readonly maxAttempts?: number;
+  /** Probability that a corridor mouth on a room wall gets a door. */
+  readonly doorChance?: number;
 };
 
 export type GenerateResult = {
@@ -42,6 +44,7 @@ const DEFAULTS = {
   maxRoomSize: 11,
   withStairsDown: true,
   maxAttempts: 50,
+  doorChance: 0.6,
 } as const;
 
 type MutableGrid = {
@@ -85,6 +88,69 @@ function carveCorridor(grid: MutableGrid, rng: RngState, a: Point, b: Point): Rn
     carveHorizontal(grid, a.x, b.x, b.y);
   }
   return r.rng;
+}
+
+function tileOf(grid: MutableGrid, x: number, y: number): TileType {
+  if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) {
+    return "wall";
+  }
+  return grid.tiles[y * grid.width + x] ?? "wall";
+}
+
+/**
+ * A doorway is a floor tile on the ring just outside a room whose only
+ * open neighbours lie on opposite sides: the corridor comes in one way and
+ * the room is on the other. Anything wider stays an open arch.
+ */
+function isDoorway(grid: MutableGrid, x: number, y: number): boolean {
+  if (tileOf(grid, x, y) !== "floor") {
+    return false;
+  }
+  const open = (dx: number, dy: number): boolean => tileOf(grid, x + dx, y + dy) !== "wall";
+  const vertical = open(0, -1) && open(0, 1) && !open(-1, 0) && !open(1, 0);
+  const horizontal = open(-1, 0) && open(1, 0) && !open(0, -1) && !open(0, 1);
+  if (!vertical && !horizontal) {
+    return false;
+  }
+  // No other doorway may touch this one, so a two-wide gap never gets two doors.
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if ((dx !== 0 || dy !== 0) && tileOf(grid, x + dx, y + dy) === "door-closed") {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/** Put doors on some of the corridor mouths around each room. */
+function placeDoors(
+  grid: MutableGrid,
+  rng: RngState,
+  rooms: readonly Rect[],
+  doorChance: number,
+): RngState {
+  let state = rng;
+  for (const room of rooms) {
+    const ring: Point[] = [];
+    for (let x = room.x - 1; x <= room.x + room.width; x++) {
+      ring.push({ x, y: room.y - 1 }, { x, y: room.y + room.height });
+    }
+    for (let y = room.y; y < room.y + room.height; y++) {
+      ring.push({ x: room.x - 1, y }, { x: room.x + room.width, y });
+    }
+    for (const p of ring) {
+      if (!isDoorway(grid, p.x, p.y)) {
+        continue;
+      }
+      const roll = chance(state, doorChance);
+      state = roll.rng;
+      if (roll.value) {
+        grid.tiles[p.y * grid.width + p.x] = "door-closed";
+      }
+    }
+  }
+  return state;
 }
 
 /** The room farthest (Chebyshev) from a reference room; used to place the stairs. */
@@ -163,6 +229,8 @@ function attemptGenerate(rng: RngState, options: Required<GenerateOptions>): Gen
     }
     state = carveCorridor(grid, state, rectCenter(roomA), rectCenter(roomB));
   }
+
+  state = placeDoors(grid, state, rooms, options.doorChance);
 
   const firstRoom = rooms[0];
   if (firstRoom === undefined) {

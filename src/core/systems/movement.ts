@@ -4,18 +4,24 @@
  */
 
 import { addPoints, type Point } from "../grid";
-import { isWalkableAt } from "../map/dungeon";
+import { isDoorAt, isWalkableAt, setTile } from "../map/dungeon";
 import { blockingEntityAt, updateEntity } from "../entity";
 import type { Entity, GameEvent, GameState } from "../types";
 
 export type MoveOutcome =
   | { readonly kind: "moved"; readonly state: GameState; readonly to: Point }
+  /** The mover spent its step opening a closed door and stayed in place. */
+  | { readonly kind: "opened-door"; readonly state: GameState; readonly at: Point }
   | { readonly kind: "blocked-by-terrain"; readonly at: Point }
   | { readonly kind: "blocked-by-entity"; readonly at: Point; readonly blocker: Entity };
 
 /** Try to move an entity one step. Does not itself emit events; the caller decides. */
 export function tryMove(state: GameState, mover: Entity, direction: Point): MoveOutcome {
   const target = addPoints(mover.position, direction);
+  if (isDoorAt(state.map, target)) {
+    const opened = { ...state, map: setTile(state.map, target, "door-open") };
+    return { kind: "opened-door", state: opened, at: target };
+  }
   if (!isWalkableAt(state.map, target)) {
     return { kind: "blocked-by-terrain", at: target };
   }
@@ -41,6 +47,11 @@ export function moveEntity(
         events: [
           { type: "entity-moved", entityId: mover.id, from: mover.position, to: outcome.to },
         ],
+      };
+    case "opened-door":
+      return {
+        state: outcome.state,
+        events: [{ type: "door-opened", entityId: mover.id, at: outcome.at }],
       };
     case "blocked-by-terrain":
     case "blocked-by-entity":

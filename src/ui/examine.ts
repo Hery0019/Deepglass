@@ -9,6 +9,7 @@ import {
   MONSTER_LIST,
   STATUS_EFFECTS,
   TILES,
+  TRAPS,
   chebyshevDistance,
   entitiesAt,
   getPlayer,
@@ -66,6 +67,11 @@ export function examineAt(state: GameState, cursor: Point): Examined {
       return { title: def.name, detail: def.description, color: def.color };
     }
   }
+  const trap = entitiesAt(state, cursor).find((e) => e.trap !== undefined && !e.trap.hidden);
+  if (trap?.trap !== undefined) {
+    const def = TRAPS[trap.trap.id];
+    return { title: def.name, detail: def.description, color: def.color };
+  }
   const tile = TILES[tileAt(map, cursor)];
   return {
     title: visible ? tile.description : `${tile.description} (remembered)`,
@@ -98,11 +104,13 @@ export function drawExamine(renderer: Renderer, state: GameState, cursor: Point)
   context.fillStyle = PALETTE.hudText;
   context.fillRect(cursor.x * cellWidth, cursor.y * cellHeight, cellWidth, cellHeight);
   const here = entitiesAt(state, cursor);
+  const knownTrap = here.find((e) => e.trap !== undefined && !e.trap.hidden);
   const shown = isVisibleAt(state.map, cursor)
     ? (here.find((e) => e.kind === "player") ??
       here.find((e) => e.kind === "monster") ??
-      here.find((e) => e.kind === "item"))
-    : undefined;
+      here.find((e) => e.kind === "item") ??
+      knownTrap)
+    : knownTrap;
   const glyph =
     shown?.glyph ??
     (isExploredAt(state.map, cursor) ? TILES[tileAt(state.map, cursor)].glyph : " ");

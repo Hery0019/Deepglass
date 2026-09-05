@@ -83,8 +83,11 @@ monster on the level one action in return.
 | `0`                         | Reset zoom                                                                        |
 | `Esc`                       | Close any overlay                                                                 |
 
-Glyphs: `#` wall, `.` floor, `>` stairs down, `!` potion, `?` scroll, `%` food,
-`)` weapon, `[` armour. Letters are monsters. Tiles you have seen but cannot currently see
+Glyphs: `#` wall, `.` floor, `+` closed door, `'` open door, `>` stairs down,
+`^` a trap you know about, `!` potion, `?` scroll, `%` food, `)` weapon, `[`
+armour. Walking into a closed door opens it, which takes a turn; closed doors
+block sight both ways. Traps are hidden until you step on one or notice it
+from an adjacent tile. Known traps are avoided by automatic movement. Letters are monsters. Tiles you have seen but cannot currently see
 are drawn dimmed.
 
 The status bar shows health, level and experience, effective attack and defence,
@@ -135,9 +138,9 @@ src/
     grid.ts            coordinates, bounds, neighbours, distances, lines
     types.ts           GameState, Entity, Action, GameEvent
     entity.ts          entity lookup and immutable updates
-    map/               tile table, dungeon map, room-and-corridor generator
-    systems/           movement, combat, fov, pathfinding, ai, items, status, hunger, progression, explore
-    data/              monster, item, and status effect tables
+    map/               tile table, dungeon map, room-and-corridor generator with doors
+    systems/           movement, combat, fov, pathfinding, ai, items, status, hunger, traps, progression, explore
+    data/              monster, item, trap, and status effect tables
     level.ts           builds a level: map plus monsters and items for a depth
     messages.ts        turns events into log text
     turn.ts            applyAction(state, action) -> { state, events }

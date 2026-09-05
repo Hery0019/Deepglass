@@ -17,7 +17,7 @@ import {
   isAdjacent,
   pointsEqual,
 } from "../grid";
-import { isWalkableAt } from "../map/dungeon";
+import { isPassableAt } from "../map/dungeon";
 import { chance, pick } from "../rng";
 import type { AiBehaviour, AiComponent, Entity, GameEvent, GameState } from "../types";
 import { meleeAttack, rangedAttack } from "./combat";
@@ -69,10 +69,27 @@ function movedEvent(monster: Entity, to: Point): GameEvent {
   return { type: "entity-moved", entityId: monster.id, from: monster.position, to };
 }
 
+/** Try one step; a closed door in the way is opened instead, which also uses the turn. */
+function stepOrOpen(state: GameState, monster: Entity, direction: Point): AiResult | null {
+  const outcome = tryMove(state, monster, direction);
+  switch (outcome.kind) {
+    case "moved":
+      return { state: outcome.state, events: [movedEvent(monster, outcome.to)] };
+    case "opened-door":
+      return {
+        state: outcome.state,
+        events: [{ type: "door-opened", entityId: monster.id, at: outcome.at }],
+      };
+    case "blocked-by-terrain":
+    case "blocked-by-entity":
+      return null;
+  }
+}
+
 /** A tile is passable for pathing if walkable and not occupied by another blocking creature. */
 function passableFor(state: GameState, monster: Entity): (p: Point) => boolean {
   return (p) => {
-    if (!isWalkableAt(state.map, p)) {
+    if (!isPassableAt(state.map, p)) {
       return false;
     }
     const blocker = blockingEntityAt(state, p);
@@ -104,9 +121,9 @@ function stepToward(state: GameState, monster: Entity, target: Point): AiResult 
     if (direction.x === 0 && direction.y === 0) {
       continue;
     }
-    const outcome = tryMove(state, monster, direction);
-    if (outcome.kind === "moved") {
-      return { state: outcome.state, events: [movedEvent(monster, outcome.to)] };
+    const result = stepOrOpen(state, monster, direction);
+    if (result !== null) {
+      return result;
     }
   }
   return IDLE(state);
@@ -131,22 +148,14 @@ function stepAway(state: GameState, monster: Entity, threat: Point): AiResult {
   if (best === null) {
     return IDLE(state);
   }
-  const outcome = tryMove(state, monster, best);
-  if (outcome.kind !== "moved") {
-    return IDLE(state);
-  }
-  return { state: outcome.state, events: [movedEvent(monster, outcome.to)] };
+  return stepOrOpen(state, monster, best) ?? IDLE(state);
 }
 
 /** Move one random step, or stay put if the chosen tile is blocked. */
 function stepRandomly(state: GameState, monster: Entity): AiResult {
   const roll = pick(state.rng, DIRECTIONS_8);
   const next: GameState = { ...state, rng: roll.rng };
-  const outcome = tryMove(next, monster, roll.value);
-  if (outcome.kind !== "moved") {
-    return IDLE(next);
-  }
-  return { state: outcome.state, events: [movedEvent(monster, outcome.to)] };
+  return stepOrOpen(next, monster, roll.value) ?? IDLE(next);
 }
 
 /** Head for the last known player position; forget it on arrival or when stuck. */
