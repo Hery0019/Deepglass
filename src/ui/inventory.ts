@@ -3,18 +3,34 @@
  * marks equipped gear. Reads state only.
  */
 
-import type { GameState } from "../core/index";
+import type { GameState, Point } from "../core/index";
 import { ITEMS, getPlayer, isEquipped } from "../core/index";
 import { SLOT_KEYS } from "../input/keyboard";
 import { PALETTE } from "../render/palette";
 import { type Renderer, drawText } from "../render/renderer";
-import { centredBox, drawFrame } from "./overlay";
+import { type Box, centredBox, drawFrame } from "./overlay";
+
+function inventoryBox(renderer: Renderer, state: GameState): Box {
+  const capacity = getPlayer(state).inventory?.capacity ?? 0;
+  return centredBox(renderer, 78, capacity + 6);
+}
+
+/** Pack slot listed on a grid cell of the open inventory, or null. */
+export function inventorySlotAt(renderer: Renderer, state: GameState, cell: Point): number | null {
+  const box = inventoryBox(renderer, state);
+  const items = getPlayer(state).inventory?.items ?? [];
+  const slot = cell.y - (box.row + 2);
+  if (cell.x < box.col || cell.x >= box.col + box.width || slot < 0 || slot >= items.length) {
+    return null;
+  }
+  return slot;
+}
 
 export function drawInventory(renderer: Renderer, state: GameState, dropping: boolean): void {
   const player = getPlayer(state);
   const items = player.inventory?.items ?? [];
   const capacity = player.inventory?.capacity ?? 0;
-  const box = centredBox(renderer, 78, capacity + 6);
+  const box = inventoryBox(renderer, state);
   drawFrame(renderer, box, dropping ? "Drop which item?" : "Inventory");
 
   const left = box.col + 2;

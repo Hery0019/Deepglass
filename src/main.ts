@@ -26,7 +26,9 @@ import { drawEndScreen } from "./ui/endscreen";
 import { drawExamine, examineTargets, fireTargets } from "./ui/examine";
 import { drawHelp } from "./ui/help";
 import { drawHud } from "./ui/hud";
-import { drawInventory } from "./ui/inventory";
+import { drawInventory, inventorySlotAt } from "./ui/inventory";
+import { type PointerCommand, tapToCommand } from "./input/pointer";
+import { TOOLBAR_ROW, drawToolbar, toolbarKeyAt } from "./ui/toolbar";
 import { drawMessageHistory, maxHistoryOffset } from "./ui/messages";
 
 /** Glyph cells never shrink below this, so small windows scroll instead of becoming unreadable. */
@@ -101,6 +103,8 @@ function main(): void {
   let cursor: Point = getPlayer(state).position;
   let historyOffset = 0;
   let autoTimer: number | null = null;
+  // The toolbar appears once a finger touches the screen; mouse users keep the keys.
+  let touch = window.matchMedia("(pointer: coarse)").matches;
 
   const drawOverlay = (r: Renderer, s: GameState): void => {
     if (mode === "examine") {
@@ -117,6 +121,9 @@ function main(): void {
       drawMessageHistory(r, s, historyOffset);
     }
     drawEndScreen(r, s);
+    if (touch) {
+      drawToolbar(r);
+    }
   };
 
   const draw = (): void => {
@@ -169,31 +176,29 @@ function main(): void {
     cursor = targets[(current + 1) % targets.length] ?? cursor;
   };
 
-  window.addEventListener("keydown", (event) => {
-    if (event.ctrlKey || event.metaKey || event.altKey) {
-      return;
-    }
-    if (autoTimer !== null) {
-      // Any key interrupts an automatic run and is otherwise ignored.
-      stopAuto();
-      event.preventDefault();
-      return;
-    }
-    const command = keyToCommand(event.key, mode);
+  /** Carry out a command from either the keyboard or a tap. Returns false if it was unbound. */
+  const handle = (command: PointerCommand | null): boolean => {
     if (command === null) {
-      return;
+      return false;
     }
-    event.preventDefault();
+    if (command.kind === "key") {
+      return handle(keyToCommand(command.key, mode));
+    }
+    if (command.kind === "cursor-set") {
+      cursor = command.cell;
+      draw();
+      return true;
+    }
     if (command.kind === "auto") {
       runAuto(command.action);
-      return;
+      return true;
     }
     if (command.kind === "fire-at-cursor") {
       const target = entitiesAt(state, cursor).find((e) => e.kind === "monster");
       state = applyAction(state, { type: "fire", targetId: target?.id ?? -1 }).state;
       mode = "play";
       draw();
-      return;
+      return true;
     }
     if (command.kind === "stairs") {
       if (isOnStairs(state)) {
@@ -202,7 +207,7 @@ function main(): void {
       } else {
         runAuto({ type: "travel-to-stairs" });
       }
-      return;
+      return true;
     }
     if (command.kind === "ui") {
       const ui = command.command;
@@ -241,7 +246,7 @@ function main(): void {
             zoomIndex = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, zoomIndex + step));
           }
           rebuild();
-          return;
+          return true;
       }
     } else {
       const result = applyAction(state, command.action);
@@ -250,6 +255,48 @@ function main(): void {
       mode = "play";
     }
     draw();
+    return true;
+  };
+
+  window.addEventListener("keydown", (event) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+    if (autoTimer !== null) {
+      // Any key interrupts an automatic run and is otherwise ignored.
+      stopAuto();
+      event.preventDefault();
+      return;
+    }
+    if (handle(keyToCommand(event.key, mode))) {
+      event.preventDefault();
+    }
+  });
+
+  canvas.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch" && !touch) {
+      touch = true;
+      draw();
+    }
+    if (autoTimer !== null) {
+      stopAuto();
+      return;
+    }
+    const { cellWidth, cellHeight } = renderer.metrics;
+    const cell = {
+      x: Math.floor(event.offsetX / cellWidth),
+      y: Math.floor(event.offsetY / cellHeight),
+    };
+    if (touch && cell.y === TOOLBAR_ROW) {
+      const key = toolbarKeyAt(cell.x);
+      if (key !== null) {
+        handle({ kind: "key", key });
+        return;
+      }
+    }
+    const slot =
+      mode === "inventory" || mode === "drop" ? inventorySlotAt(renderer, state, cell) : null;
+    handle(tapToCommand(state, mode, cell, cursor, slot));
   });
 
   draw();

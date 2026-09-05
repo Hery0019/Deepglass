@@ -43,8 +43,10 @@ function describeRefusal(before: GameState, reason: AutoRefusal, entityId?: numb
       return "You have explored everything you can reach.";
     case "stairs-unknown":
       return "You have not found a way to the stairs yet.";
+    case "no-route":
+      return "You know no way there.";
     case "already-there":
-      return "You are already standing on the stairs.";
+      return "You are already there.";
     case "full-health":
       return "You are already at full health.";
     case "poisoned":
