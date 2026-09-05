@@ -51,7 +51,10 @@ function reveal(state: GameState, trapEntityId: number): GameState {
 }
 
 /** A random walkable tile with nothing blocking on it, at least a few steps away. */
-function randomDestination(state: GameState, from: Point): { state: GameState; to: Point | null } {
+export function randomDestination(
+  state: GameState,
+  from: Point,
+): { state: GameState; to: Point | null } {
   let next = state;
   for (let attempt = 0; attempt < 60; attempt++) {
     const xRoll = nextInt(next.rng, 0, state.map.width - 1);

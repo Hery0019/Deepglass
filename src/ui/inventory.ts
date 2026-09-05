@@ -4,7 +4,7 @@
  */
 
 import type { GameState, Point } from "../core/index";
-import { ITEMS, getPlayer, isEquipped } from "../core/index";
+import { ITEMS, getPlayer, isEquipped, itemDescription, itemName } from "../core/index";
 import { SLOT_KEYS } from "../input/keyboard";
 import { PALETTE } from "../render/palette";
 import { type Renderer, drawText } from "../render/renderer";
@@ -55,10 +55,17 @@ export function drawInventory(renderer: Renderer, state: GameState, dropping: bo
       renderer,
       left + 5,
       row,
-      `${def.name}${suffix}`,
+      `${itemName(state, item)}${suffix}`,
       equipped ? PALETTE.logGood : PALETTE.hudText,
     );
-    drawText(renderer, left + 28, row, def.description, PALETTE.hudDim, box.width - 31);
+    drawText(
+      renderer,
+      left + 28,
+      row,
+      itemDescription(state, item),
+      PALETTE.hudDim,
+      box.width - 31,
+    );
     row++;
   });
 

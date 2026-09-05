@@ -15,6 +15,7 @@ import { runMonsterTurn } from "./systems/ai";
 import { canShoot, meleeAttack, shoot } from "./systems/combat";
 import { PLAYER_SIGHT_RADIUS, updateVisibility } from "./systems/fov";
 import { HUNGER_MAX, HUNGER_START, hungerBlocksRegen, tickHunger } from "./systems/hunger";
+import { rollAppearances } from "./systems/identify";
 import { INVENTORY_CAPACITY, dropItem, effectiveRanged, pickUp, useItem } from "./systems/items";
 import {
   exploreStep,
@@ -72,7 +73,8 @@ export function createPlayer(position: Entity["position"]): Entity {
 }
 
 export function createGame(seed: number): GameState {
-  const rng: RngState = seedRng(seed);
+  const looks = rollAppearances(seedRng(seed));
+  const rng: RngState = looks.rng;
   const level = createLevel(rng, 1);
   const map = updateVisibility(level.map, level.map.spawn, PLAYER_SIGHT_RADIUS);
   let state: GameState = {
@@ -88,6 +90,8 @@ export function createGame(seed: number): GameState {
     log: [{ turn: 0, text: "You descend into the dungeon.", tone: "system" }],
     status: "playing",
     stats: { kills: 0, maxDepth: 1 },
+    identified: [],
+    appearances: looks.appearances,
   };
   for (const monster of level.monsters) {
     state = spawnEntity(state, monster).state;

@@ -27,6 +27,7 @@ export * from "./systems/pathfinding";
 export * from "./systems/ai";
 export * from "./systems/explore";
 export * from "./systems/hunger";
+export * from "./systems/identify";
 export * from "./systems/traps";
 export * from "./messages";
 export * from "./level";

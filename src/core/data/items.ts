@@ -8,6 +8,10 @@ import type { StatusId } from "./effects";
 
 export type ItemId =
   | "health-potion"
+  | "vigour-potion"
+  | "poison-potion"
+  | "scroll-of-teleportation"
+  | "scroll-of-mapping"
   | "scroll-of-flame"
   | "scroll-of-bewilderment"
   | "food-ration"
@@ -26,6 +30,12 @@ export type ItemCategory = "potion" | "scroll" | "food" | "weapon" | "bow" | "ar
 export type ItemEffect =
   | { readonly type: "heal"; readonly amount: number; readonly cures: readonly StatusId[] }
   | { readonly type: "feed"; readonly amount: number }
+  /** Inflict a status on the user. */
+  | { readonly type: "self-status"; readonly status: StatusId; readonly turns: number }
+  /** Move the user to a random tile elsewhere on the level. */
+  | { readonly type: "teleport" }
+  /** Reveal the whole level's layout. */
+  | { readonly type: "map" }
   | {
       readonly type: "area-damage";
       readonly radius: number;
@@ -85,6 +95,54 @@ export const ITEMS: Readonly<Record<ItemId, ItemDef>> = {
     minDepth: 1,
     maxDepth: 9,
     weight: 22,
+  },
+  "vigour-potion": {
+    id: "vigour-potion",
+    name: "potion of vigour",
+    glyph: "!",
+    color: "#f0a0c0",
+    category: "potion",
+    description: "Restores 30 health and cures poison and confusion.",
+    effect: { type: "heal", amount: 30, cures: ["poison", "confusion"] },
+    minDepth: 4,
+    maxDepth: 9,
+    weight: 8,
+  },
+  "poison-potion": {
+    id: "poison-potion",
+    name: "potion of poison",
+    glyph: "!",
+    color: "#7fd17f",
+    category: "potion",
+    description: "Poisons whoever drinks it for 6 turns.",
+    effect: { type: "self-status", status: "poison", turns: 6 },
+    minDepth: 2,
+    maxDepth: 9,
+    weight: 7,
+  },
+  "scroll-of-teleportation": {
+    id: "scroll-of-teleportation",
+    name: "scroll of teleportation",
+    glyph: "?",
+    color: "#9a7fd1",
+    category: "scroll",
+    description: "Moves you somewhere else on this level.",
+    effect: { type: "teleport" },
+    minDepth: 2,
+    maxDepth: 9,
+    weight: 7,
+  },
+  "scroll-of-mapping": {
+    id: "scroll-of-mapping",
+    name: "scroll of mapping",
+    glyph: "?",
+    color: "#e8d44d",
+    category: "scroll",
+    description: "Reveals the layout of this level.",
+    effect: { type: "map" },
+    minDepth: 1,
+    maxDepth: 9,
+    weight: 6,
   },
   "food-ration": {
     id: "food-ration",
