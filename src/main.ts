@@ -166,6 +166,9 @@ function main(): void {
     if (touch) {
       drawToolbar(r);
     }
+    if (notice !== null) {
+      drawBanner(r, notice);
+    }
   };
 
   const draw = (): void => {
@@ -228,6 +231,30 @@ function main(): void {
     window.setTimeout(() => {
       runReplay(false);
     }, REPLAY_STEP_MS);
+  };
+
+  /** A short client-side notice drawn as a banner, for things the log does not know about. */
+  let notice: string | null = null;
+  const showNotice = (text: string): void => {
+    notice = text;
+    draw();
+    window.setTimeout(() => {
+      notice = null;
+      draw();
+    }, 2000);
+  };
+
+  /** Put the full replay link on the clipboard. */
+  const copyReplayLink = (): void => {
+    writeReplayUrl(start.seed, actions);
+    navigator.clipboard.writeText(window.location.href).then(
+      () => {
+        showNotice("Replay link copied to the clipboard.");
+      },
+      () => {
+        showNotice("Could not copy; copy the address bar instead.");
+      },
+    );
   };
 
   /** Start over with a fresh seed. */
@@ -367,7 +394,13 @@ function main(): void {
       // A finished replay is watched, not continued.
       if (event.key === "n" || event.key === "Enter") {
         newRun();
+      } else if (event.key === "c") {
+        copyReplayLink();
       }
+      return;
+    }
+    if (state.status !== "playing" && event.key === "c") {
+      copyReplayLink();
       return;
     }
     if (autoTimer !== null) {

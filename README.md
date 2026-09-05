@@ -143,7 +143,8 @@ carries a status. The pack holds ten items.
 
 The death and victory screens list the best runs played in this browser:
 wins first, then by depth, kills, and turns. They are kept in local storage
-only. Press `n` or `Enter` there (or tap) to start a new run with a fresh seed.
+only. Press `n` or `Enter` there (or tap) to start a new run with a fresh seed,
+or `c` to copy the replay link of the run that just ended.
 
 ### Unidentified items
 
