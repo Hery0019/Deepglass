@@ -26,7 +26,13 @@ export function drawInventory(renderer: Renderer, state: GameState, dropping: bo
     const def = ITEMS[item.defId];
     const key = SLOT_KEYS[index] ?? "?";
     const equipped = isEquipped(player, item);
-    const suffix = equipped ? (def.category === "armour" ? " (worn)" : " (wielded)") : "";
+    const suffix = equipped
+      ? def.category === "armour"
+        ? " (worn)"
+        : def.category === "bow"
+          ? " (readied)"
+          : " (wielded)"
+      : "";
     drawText(renderer, left, row, `${key})`, PALETTE.hudDim);
     drawText(renderer, left + 3, row, def.glyph, def.color);
     drawText(

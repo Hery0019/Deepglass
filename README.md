@@ -74,6 +74,7 @@ monster on the level one action in return.
 | `o`                         | Explore: walk toward unseen tiles until a monster or item shows up                |
 | `r`                         | Rest until fully healed, or until a monster appears                               |
 | `x`                         | Examine: move a cursor over the map; `Tab` cycles visible monsters, `Esc` leaves  |
+| `f`                         | Fire the readied bow: `Tab` cycles targets in range, `f` or `Enter` shoots        |
 | `g` or `,`                  | Pick up the item under you                                                        |
 | `i`                         | Open your pack, then press a slot letter (`a`–`j`) to use or equip                |
 | `d`                         | Drop an item: press `d`, then the slot letter                                     |
@@ -84,8 +85,8 @@ monster on the level one action in return.
 | `Esc`                       | Close any overlay                                                                 |
 
 Glyphs: `#` wall, `.` floor, `+` closed door, `'` open door, `>` stairs down,
-`^` a trap you know about, `!` potion, `?` scroll, `%` food, `)` weapon, `[`
-armour. Walking into a closed door opens it, which takes a turn; closed doors
+`^` a trap you know about, `!` potion, `?` scroll, `%` food, `)` weapon, `}` bow,
+`[` armour. Walking into a closed door opens it, which takes a turn; closed doors
 block sight both ways. Traps are hidden until you step on one or notice it
 from an adjacent tile. Known traps are avoided by automatic movement. Letters are monsters. Tiles you have seen but cannot currently see
 are drawn dimmed.
@@ -119,7 +120,9 @@ saw you, then give up.
 
 Items: food ration, health potion (heals and cures poison), scroll of flame (burns everything
 near you), scroll of bewilderment (confuses everything near you), three weapons
-and three armour pieces with accuracy trade-offs. The pack holds ten items.
+and three armour pieces with accuracy trade-offs, and two bows. A readied bow
+shoots any monster you can see within its range; a shot takes a turn and never
+carries a status. The pack holds ten items.
 
 ### Seeds and replays
 

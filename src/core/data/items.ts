@@ -11,6 +11,8 @@ export type ItemId =
   | "scroll-of-flame"
   | "scroll-of-bewilderment"
   | "food-ration"
+  | "short-bow"
+  | "long-bow"
   | "dagger"
   | "sword"
   | "war-axe"
@@ -18,7 +20,7 @@ export type ItemId =
   | "chain-mail"
   | "plate-armour";
 
-export type ItemCategory = "potion" | "scroll" | "food" | "weapon" | "armour";
+export type ItemCategory = "potion" | "scroll" | "food" | "weapon" | "bow" | "armour";
 
 /** What happens when a consumable is used. */
 export type ItemEffect =
@@ -44,6 +46,11 @@ export type WeaponStats = {
   readonly accuracyBonus: number;
 };
 
+export type BowStats = WeaponStats & {
+  /** Maximum Chebyshev distance of a shot. */
+  readonly range: number;
+};
+
 export type ArmourStats = {
   readonly defence: number;
   /** Subtracted from the wearer's accuracy; heavier armour is clumsier. */
@@ -59,6 +66,7 @@ export type ItemDef = {
   readonly description: string;
   readonly effect?: ItemEffect;
   readonly weapon?: WeaponStats;
+  readonly bow?: BowStats;
   readonly armour?: ArmourStats;
   readonly minDepth: number;
   readonly maxDepth: number;
@@ -113,6 +121,30 @@ export const ITEMS: Readonly<Record<ItemId, ItemDef>> = {
     minDepth: 1,
     maxDepth: 9,
     weight: 6,
+  },
+  "short-bow": {
+    id: "short-bow",
+    name: "short bow",
+    glyph: "}",
+    color: "#a67c52",
+    category: "bow",
+    description: "Shoots for 2-5 at up to 6 tiles. Press f to fire.",
+    bow: { min: 2, max: 5, accuracyBonus: -0.05, range: 6 },
+    minDepth: 1,
+    maxDepth: 6,
+    weight: 7,
+  },
+  "long-bow": {
+    id: "long-bow",
+    name: "long bow",
+    glyph: "}",
+    color: "#c49a6c",
+    category: "bow",
+    description: "Shoots for 4-9 at up to 8 tiles. Press f to fire.",
+    bow: { min: 4, max: 9, accuracyBonus: -0.1, range: 8 },
+    minDepth: 5,
+    maxDepth: 9,
+    weight: 5,
   },
   dagger: {
     id: "dagger",

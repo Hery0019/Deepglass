@@ -3,9 +3,10 @@
  * there. Draws the cursor and a short description box. Reads state only.
  */
 
-import type { GameState, Point } from "../core/index";
+import type { Entity, GameState, Point } from "../core/index";
 import {
   ITEMS,
+  canShoot,
   MONSTER_LIST,
   STATUS_EFFECTS,
   TILES,
@@ -82,9 +83,19 @@ export function examineAt(state: GameState, cursor: Point): Examined {
 
 /** Visible monsters ordered by distance from the player, for cycling with Tab. */
 export function examineTargets(state: GameState): Point[] {
+  return targetsWhere(state, (e) => isVisibleAt(state.map, e.position));
+}
+
+/** Visible monsters the readied bow can reach, nearest first. */
+export function fireTargets(state: GameState): Point[] {
+  const player = getPlayer(state);
+  return targetsWhere(state, (e) => canShoot(state, player, e));
+}
+
+function targetsWhere(state: GameState, accept: (e: Entity) => boolean): Point[] {
   const player = getPlayer(state);
   return state.entities
-    .filter((e) => e.kind === "monster" && isVisibleAt(state.map, e.position))
+    .filter((e) => e.kind === "monster" && accept(e))
     .sort(
       (a, b) =>
         chebyshevDistance(player.position, a.position) -
@@ -96,7 +107,12 @@ export function examineTargets(state: GameState): Point[] {
 const BOX_WIDTH = 64;
 const BOX_HEIGHT = 4;
 
-export function drawExamine(renderer: Renderer, state: GameState, cursor: Point): void {
+export function drawExamine(
+  renderer: Renderer,
+  state: GameState,
+  cursor: Point,
+  title = "Examine",
+): void {
   const { cellWidth, cellHeight } = renderer.metrics;
   const { context } = renderer;
 
@@ -124,7 +140,7 @@ export function drawExamine(renderer: Renderer, state: GameState, cursor: Point)
     width: BOX_WIDTH,
     height: BOX_HEIGHT,
   };
-  drawFrame(renderer, box, "Examine");
+  drawFrame(renderer, box, title);
   drawText(renderer, box.col + 2, box.row + 1, info.title, info.color, box.width - 4);
   drawText(renderer, box.col + 2, box.row + 2, info.detail, PALETTE.hudDim, box.width - 4);
 }
