@@ -1,0 +1,15 @@
+{
+  "name": "Deepglass",
+  "short_name": "Deepglass",
+  "description": "A turn-based ASCII roguelike. Descend eight levels and kill the Warden.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0b0b0f",
+  "theme_color": "#0b0b0f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

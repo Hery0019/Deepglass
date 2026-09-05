@@ -480,3 +480,13 @@ function main(): void {
 }
 
 main();
+
+// Offline play: the service worker caches the game as it is fetched. Only on
+// real servers; the dev server rewrites modules and would confuse the cache.
+if ("serviceWorker" in navigator && !import.meta.env.DEV) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      // Without a service worker the game still runs; it just needs the network.
+    });
+  });
+}

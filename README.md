@@ -42,7 +42,8 @@ headless browser. Seed 2 is a winning run; seed 1 starves on depth 7.
 The latest build on `main` is deployed to GitHub Pages at
 <https://hery0019.github.io/Deepglass/>. Every push to `main` that passes lint,
 typecheck, tests, and build is published there by the CI workflow in
-`.github/workflows/ci.yml`.
+`.github/workflows/ci.yml`. The page is installable as a web app and, once
+visited, plays offline: a service worker keeps a copy of the game.
 
 ## Running it
 
