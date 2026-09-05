@@ -104,6 +104,7 @@ export function stateFromStrings(
     entities,
     playerId: player.id,
     nextEntityId: 2 + extras.length,
+    nextItemId: 1,
     log: [],
     status: "playing",
     stats: { kills: 0 },

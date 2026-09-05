@@ -9,6 +9,8 @@
 import { removeEntity, updateEntity } from "../entity";
 import { type RngState, chance, nextInt } from "../rng";
 import type { AttackComponent, Entity, GameEvent, GameState } from "../types";
+import { effectiveAttack, effectiveDefence } from "./items";
+import { applyStatus } from "./status";
 
 export const MIN_DAMAGE = 1;
 
@@ -22,10 +24,10 @@ export function rollDamage(
   rng: RngState,
   attacker: Entity,
   defender: Entity,
+  attack: AttackComponent = effectiveAttack(attacker),
 ): { readonly rng: RngState; readonly damage: number } {
-  const attack = attacker.attack ?? { min: 1, max: 1, accuracy: 1 };
   const roll = nextInt(rng, attack.min, attack.max);
-  const defence = defender.defence ?? 0;
+  const defence = effectiveDefence(defender);
   return { rng: roll.rng, damage: Math.max(MIN_DAMAGE, roll.value - defence) };
 }
 
@@ -92,7 +94,7 @@ function resolveAttack(
     };
   }
 
-  const dmg = rollDamage(next.rng, { ...attacker, attack }, defender);
+  const dmg = rollDamage(next.rng, attacker, defender, attack);
   next = applyDamage({ ...next, rng: dmg.rng }, defender.id, dmg.damage);
   const events: GameEvent[] = [
     {
@@ -109,13 +111,23 @@ function resolveAttack(
     const death = resolveDeath(next, wounded, attacker.id);
     return { state: death.state, events: [...events, ...death.events] };
   }
+
+  // Melee hits may carry a status (poison, confusion).
+  if (!ranged && attacker.onHit !== undefined) {
+    const roll = chance(next.rng, attacker.onHit.chance);
+    next = { ...next, rng: roll.rng };
+    if (roll.value) {
+      const applied = applyStatus(next, defender.id, attacker.onHit.status, attacker.onHit.turns);
+      next = applied.state;
+      events.push(...applied.events);
+    }
+  }
   return { state: next, events };
 }
 
 /** Resolve one melee attack from attacker to defender, including a possible kill. */
 export function meleeAttack(state: GameState, attacker: Entity, defender: Entity): CombatResult {
-  const attack = attacker.attack ?? { min: 1, max: 1, accuracy: 1 };
-  return resolveAttack(state, attacker, defender, attack, false);
+  return resolveAttack(state, attacker, defender, effectiveAttack(attacker), false);
 }
 
 /** Resolve one ranged attack. Falls back to the melee profile if the attacker has no ranged one. */

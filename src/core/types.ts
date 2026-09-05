@@ -5,6 +5,8 @@
  * optional component fields; behaviour lives in systems under systems/.
  */
 
+import type { StatusId } from "./data/effects";
+import type { ItemId } from "./data/items";
 import type { Point } from "./grid";
 import type { DungeonMap } from "./map/dungeon";
 import type { RngState } from "./rng";
@@ -49,6 +51,36 @@ export type ExperienceComponent = {
   readonly xp: number;
 };
 
+/** An item instance. Items on the floor are entities carrying one of these. */
+export type Item = {
+  /** Unique across the run so equipment can reference a specific instance. */
+  readonly id: number;
+  readonly defId: ItemId;
+};
+
+export type InventoryComponent = {
+  readonly items: readonly Item[];
+  readonly capacity: number;
+};
+
+export type EquipmentComponent = {
+  /** Inventory item ids of the equipped pieces. */
+  readonly weaponId?: number;
+  readonly armourId?: number;
+};
+
+export type StatusInstance = {
+  readonly id: StatusId;
+  readonly turnsLeft: number;
+};
+
+/** A status a monster may inflict when its melee attack lands. */
+export type OnHitStatus = {
+  readonly status: StatusId;
+  readonly turns: number;
+  readonly chance: number;
+};
+
 export type Entity = {
   readonly id: EntityId;
   readonly kind: EntityKind;
@@ -76,6 +108,12 @@ export type Entity = {
   readonly experience?: ExperienceComponent;
   /** Sight radius for creatures that look for the player. */
   readonly sightRadius?: number;
+  /** Present on floor items. */
+  readonly item?: Item;
+  readonly inventory?: InventoryComponent;
+  readonly equipment?: EquipmentComponent;
+  readonly statuses?: readonly StatusInstance[];
+  readonly onHit?: OnHitStatus;
 };
 
 export type LogTone = "info" | "combat" | "good" | "bad" | "system";
@@ -101,6 +139,8 @@ export type GameState = {
   readonly entities: readonly Entity[];
   readonly playerId: EntityId;
   readonly nextEntityId: EntityId;
+  /** Counter used to allocate unique item ids across the run. */
+  readonly nextItemId: number;
   readonly log: readonly LogEntry[];
   readonly status: GameStatus;
   readonly stats: RunStats;
@@ -108,7 +148,12 @@ export type GameState = {
 
 /** Something the player wants to do. Produced by the input layer. */
 export type Action =
-  { readonly type: "move"; readonly direction: Point } | { readonly type: "wait" };
+  | { readonly type: "move"; readonly direction: Point }
+  | { readonly type: "wait" }
+  | { readonly type: "pick-up" }
+  /** Use a consumable or toggle equipment in the given inventory slot. */
+  | { readonly type: "use-item"; readonly slot: number }
+  | { readonly type: "drop-item"; readonly slot: number };
 
 /** Something that happened during a turn. Consumed by the renderer and message log. */
 export type GameEvent =
@@ -133,6 +178,23 @@ export type GameEvent =
       readonly ranged: boolean;
     }
   | { readonly type: "entity-died"; readonly entityId: EntityId; readonly killerId?: EntityId }
+  /** Damage from a non-attack source such as poison or a scroll. */
+  | {
+      readonly type: "entity-damaged";
+      readonly entityId: EntityId;
+      readonly amount: number;
+      readonly source: string;
+    }
+  | { readonly type: "entity-healed"; readonly entityId: EntityId; readonly amount: number }
+  | { readonly type: "item-picked-up"; readonly entityId: EntityId; readonly item: Item }
+  | { readonly type: "item-dropped"; readonly entityId: EntityId; readonly item: Item }
+  | { readonly type: "item-used"; readonly entityId: EntityId; readonly item: Item }
+  | { readonly type: "item-equipped"; readonly entityId: EntityId; readonly item: Item }
+  | { readonly type: "item-unequipped"; readonly entityId: EntityId; readonly item: Item }
+  | { readonly type: "inventory-full"; readonly entityId: EntityId }
+  | { readonly type: "nothing-here"; readonly entityId: EntityId }
+  | { readonly type: "status-applied"; readonly entityId: EntityId; readonly status: StatusId }
+  | { readonly type: "status-expired"; readonly entityId: EntityId; readonly status: StatusId }
   | { readonly type: "message"; readonly text: string; readonly tone: LogTone };
 
 export type TurnResult = {

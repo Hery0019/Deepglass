@@ -3,6 +3,8 @@
  * knows how to phrase what happened; the renderer and log just display it.
  */
 
+import { STATUS_EFFECTS } from "./data/effects";
+import { ITEMS } from "./data/items";
 import { findEntity } from "./entity";
 import type { GameEvent, GameState, LogEntry, LogTone } from "./types";
 
@@ -60,6 +62,65 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
         return entry(`You kill ${victim}.`, "good");
       }
       return entry(`${capitalize(victim)} dies.`, "info");
+    }
+    case "entity-damaged": {
+      const isPlayer = event.entityId === before.playerId;
+      const who = nameOf(before, event.entityId);
+      const verb = isPlayer ? "take" : "takes";
+      return entry(
+        `${capitalize(who)} ${verb} ${String(event.amount)} damage from ${event.source}.`,
+        isPlayer ? "bad" : "combat",
+      );
+    }
+    case "entity-healed": {
+      if (event.entityId !== before.playerId) {
+        return null;
+      }
+      return entry(
+        event.amount > 0 ? `You feel better (+${String(event.amount)}).` : "You feel no different.",
+        "good",
+      );
+    }
+    case "item-picked-up":
+      return entry(`You pick up the ${ITEMS[event.item.defId].name}.`, "info");
+    case "item-dropped":
+      return entry(`You drop the ${ITEMS[event.item.defId].name}.`, "info");
+    case "item-used": {
+      const def = ITEMS[event.item.defId];
+      const verb = def.category === "scroll" ? "read" : "drink";
+      return entry(`You ${verb} the ${def.name}.`, "info");
+    }
+    case "item-equipped": {
+      const def = ITEMS[event.item.defId];
+      const verb = def.category === "armour" ? "put on" : "wield";
+      return entry(`You ${verb} the ${def.name}.`, "info");
+    }
+    case "item-unequipped": {
+      const def = ITEMS[event.item.defId];
+      const verb = def.category === "armour" ? "take off" : "put away";
+      return entry(`You ${verb} the ${def.name}.`, "info");
+    }
+    case "inventory-full":
+      return entry("Your pack is full.", "info");
+    case "nothing-here":
+      return entry("There is nothing here to pick up.", "info");
+    case "status-applied": {
+      const isPlayer = event.entityId === before.playerId;
+      const who = nameOf(before, event.entityId);
+      const text = STATUS_EFFECTS[event.status].appliedText;
+      return entry(
+        `${capitalize(who)} ${isPlayer ? text.replace(/^is /, "are ").replace(/^looks /, "look ") : text}.`,
+        isPlayer ? "bad" : "combat",
+      );
+    }
+    case "status-expired": {
+      const isPlayer = event.entityId === before.playerId;
+      const who = nameOf(before, event.entityId);
+      const text = STATUS_EFFECTS[event.status].expiredText;
+      return entry(
+        `${capitalize(who)} ${isPlayer ? text.replace(/^is /, "are ") : text}.`,
+        isPlayer ? "good" : "info",
+      );
     }
     case "entity-moved":
     case "entity-blocked":

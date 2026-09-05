@@ -7,14 +7,16 @@
  */
 
 import { blockingEntityAt, getPlayer, spawnEntity } from "./entity";
-import { addPoints } from "./grid";
+import { DIRECTIONS_8, addPoints } from "./grid";
 import { createLevel } from "./level";
 import { describeEvent } from "./messages";
-import { type RngState, seedRng } from "./rng";
+import { type RngState, pick, seedRng } from "./rng";
 import { runMonsterTurn } from "./systems/ai";
 import { meleeAttack } from "./systems/combat";
 import { PLAYER_SIGHT_RADIUS, updateVisibility } from "./systems/fov";
+import { INVENTORY_CAPACITY, dropItem, pickUp, useItem } from "./systems/items";
 import { moveEntity } from "./systems/movement";
+import { isMovementScrambled, tickAllStatuses } from "./systems/status";
 import type { Action, Entity, GameEvent, GameState, LogEntry, TurnResult } from "./types";
 
 export const PLAYER_ID = 1;
@@ -45,6 +47,8 @@ export function createPlayer(position: Entity["position"]): Entity {
     defence: PLAYER_BASE.defence,
     experience: { level: 1, xp: 0 },
     sightRadius: PLAYER_SIGHT_RADIUS,
+    inventory: { items: [], capacity: INVENTORY_CAPACITY },
+    equipment: {},
   };
 }
 
@@ -61,12 +65,16 @@ export function createGame(seed: number): GameState {
     entities: [createPlayer(map.spawn)],
     playerId: PLAYER_ID,
     nextEntityId: PLAYER_ID + 1,
+    nextItemId: level.nextItemId,
     log: [{ turn: 0, text: "You descend into the dungeon.", tone: "system" }],
     status: "playing",
     stats: { kills: 0 },
   };
   for (const monster of level.monsters) {
     state = spawnEntity(state, monster).state;
+  }
+  for (const item of level.items) {
+    state = spawnEntity(state, item).state;
   }
   return state;
 }
@@ -95,22 +103,40 @@ type PhaseResult = {
   readonly tookTurn: boolean;
 };
 
-function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
+function resolveMove(state: GameState, requested: Entity["position"]): PhaseResult {
   const player = getPlayer(state);
+  let current = state;
+  let direction = requested;
+  const scrambled = isMovementScrambled(player);
+  if (scrambled) {
+    const roll = pick(current.rng, DIRECTIONS_8);
+    current = { ...current, rng: roll.rng };
+    direction = roll.value;
+  }
+  const target = addPoints(player.position, direction);
+  const blocker = blockingEntityAt(current, target);
+  if (blocker?.kind === "monster") {
+    const combat = meleeAttack(current, player, blocker);
+    return { state: combat.state, events: combat.events, tookTurn: true };
+  }
+  const result = moveEntity(current, player, direction);
+  const moved = result.events.some((e) => e.type === "entity-moved");
+  // Bumping into a wall costs no time, but a confused stumble does.
+  return { state: result.state, events: result.events, tookTurn: moved || scrambled };
+}
+
+function resolvePlayerAction(state: GameState, action: Action): PhaseResult {
   switch (action.type) {
-    case "move": {
-      const target = addPoints(player.position, action.direction);
-      const blocker = blockingEntityAt(state, target);
-      if (blocker?.kind === "monster") {
-        const combat = meleeAttack(state, player, blocker);
-        return { state: combat.state, events: combat.events, tookTurn: true };
-      }
-      const result = moveEntity(state, player, action.direction);
-      const moved = result.events.some((e) => e.type === "entity-moved");
-      return { state: result.state, events: result.events, tookTurn: moved };
-    }
+    case "move":
+      return resolveMove(state, action.direction);
     case "wait":
       return { state, events: [], tookTurn: true };
+    case "pick-up":
+      return pickUp(state);
+    case "use-item":
+      return useItem(state, action.slot);
+    case "drop-item":
+      return dropItem(state, action.slot);
   }
 }
 
@@ -150,7 +176,6 @@ export function applyAction(state: GameState, action: Action): TurnResult {
   const events: GameEvent[] = [...playerPhase.events];
 
   if (!playerPhase.tookTurn) {
-    // Bumping into a wall costs no time.
     return { state: appendLog(state, next, events), events };
   }
 
@@ -158,6 +183,12 @@ export function applyAction(state: GameState, action: Action): TurnResult {
     const monsterPhase = resolveMonsterPhase(next);
     next = monsterPhase.state;
     events.push(...monsterPhase.events);
+  }
+
+  if (next.status === "playing") {
+    const statusPhase = tickAllStatuses(next);
+    next = statusPhase.state;
+    events.push(...statusPhase.events);
   }
 
   next = { ...next, turn: next.turn + 1 };

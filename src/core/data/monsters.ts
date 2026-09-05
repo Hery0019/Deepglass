@@ -4,7 +4,7 @@
  * and parameterized by the optional fields below.
  */
 
-import type { AiBehaviour } from "../types";
+import type { AiBehaviour, OnHitStatus } from "../types";
 
 export type MonsterId =
   "rat" | "bat" | "kobold" | "goblin-archer" | "cave-spider" | "orc" | "wraith" | "ogre" | "warden";
@@ -40,6 +40,8 @@ export type MonsterDef = {
   readonly preferredRange?: number;
   /** Probability per turn that an "erratic" monster moves randomly instead of acting. */
   readonly erraticChance?: number;
+  /** Status inflicted when a melee hit lands. */
+  readonly onHit?: OnHitStatus;
 };
 
 export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
@@ -77,6 +79,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     maxDepth: 5,
     weight: 10,
     erraticChance: 0.6,
+    onHit: { status: "confusion", turns: 3, chance: 0.25 },
   },
   kobold: {
     id: "kobold",
@@ -131,6 +134,7 @@ export const MONSTERS: Readonly<Record<MonsterId, MonsterDef>> = {
     minDepth: 3,
     maxDepth: 8,
     weight: 7,
+    onHit: { status: "poison", turns: 5, chance: 0.6 },
   },
   orc: {
     id: "orc",

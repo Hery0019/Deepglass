@@ -1,20 +1,25 @@
 /**
- * Level construction: generate a map and populate it with monsters
- * appropriate to the depth. Spawn tables live in data/monsters.ts.
+ * Level construction: generate a map and populate it with monsters and
+ * items appropriate to the depth. Spawn tables live in data/.
  */
 
-import { type Point, pointKey, rectCenter } from "./grid";
-import { generateMap } from "./map/generate";
+import { ITEM_LIST, type ItemDef } from "./data/items";
 import { BOSS_ID, MONSTERS, MONSTER_LIST, type MonsterDef } from "./data/monsters";
+import { type Point, pointKey, rectCenter } from "./grid";
+import type { DungeonMap } from "./map/dungeon";
+import { generateMap } from "./map/generate";
 import { type RngState, nextInt, pickWeighted } from "./rng";
-import type { DungeonMap, Entity } from "./index";
+import type { Entity } from "./types";
 
 export const FINAL_DEPTH = 9;
 
 export type LevelResult = {
   readonly map: DungeonMap;
   readonly monsters: readonly Omit<Entity, "id">[];
+  readonly items: readonly Omit<Entity, "id">[];
   readonly rng: RngState;
+  /** Item id counter after placement. */
+  readonly nextItemId: number;
 };
 
 export function monsterFromDef(def: MonsterDef, position: Point): Omit<Entity, "id"> {
@@ -35,7 +40,24 @@ export function monsterFromDef(def: MonsterDef, position: Point): Omit<Entity, "
     ...(def.fleeThreshold !== undefined ? { fleeThreshold: def.fleeThreshold } : {}),
     ...(def.preferredRange !== undefined ? { preferredRange: def.preferredRange } : {}),
     ...(def.erraticChance !== undefined ? { erraticChance: def.erraticChance } : {}),
+    ...(def.onHit !== undefined ? { onHit: def.onHit } : {}),
     ...(def.id === BOSS_ID ? { isBoss: true } : {}),
+  };
+}
+
+export function itemEntityFromDef(
+  def: ItemDef,
+  itemId: number,
+  position: Point,
+): Omit<Entity, "id"> {
+  return {
+    kind: "item",
+    name: def.name,
+    glyph: def.glyph,
+    color: def.color,
+    position,
+    blocksMovement: false,
+    item: { id: itemId, defId: def.id },
   };
 }
 
@@ -44,12 +66,22 @@ export function spawnTableForDepth(depth: number): readonly MonsterDef[] {
   return MONSTER_LIST.filter((m) => m.weight > 0 && depth >= m.minDepth && depth <= m.maxDepth);
 }
 
+/** Items eligible for random placement at a depth, as a weighted table. */
+export function itemTableForDepth(depth: number): readonly ItemDef[] {
+  return ITEM_LIST.filter((i) => i.weight > 0 && depth >= i.minDepth && depth <= i.maxDepth);
+}
+
 /** Number of monsters to place on a level, growing with depth. */
 export function monsterCountForDepth(depth: number): {
   readonly min: number;
   readonly max: number;
 } {
   return { min: 4 + depth, max: 7 + depth * 2 };
+}
+
+/** Number of items to place on a level. */
+export function itemCountForDepth(depth: number): { readonly min: number; readonly max: number } {
+  return { min: 3, max: 5 + Math.floor(depth / 2) };
 }
 
 /** Pick a random floor tile inside a room that is not already taken. */
@@ -97,7 +129,7 @@ function farthestRoomCenter(map: DungeonMap): Point | null {
   return best;
 }
 
-export function createLevel(rng: RngState, depth: number): LevelResult {
+export function createLevel(rng: RngState, depth: number, firstItemId = 1): LevelResult {
   const generated = generateMap(rng, { withStairsDown: depth < FINAL_DEPTH });
   const map = generated.map;
   let state = generated.rng;
@@ -111,7 +143,6 @@ export function createLevel(rng: RngState, depth: number): LevelResult {
     return c.x === map.spawn.x && c.y === map.spawn.y;
   });
 
-  const table = spawnTableForDepth(depth);
   const monsters: Omit<Entity, "id">[] = [];
 
   // The boss guards the room farthest from the entrance on the final level.
@@ -122,6 +153,8 @@ export function createLevel(rng: RngState, depth: number): LevelResult {
       monsters.push(monsterFromDef(MONSTERS[BOSS_ID], lair));
     }
   }
+
+  const table = spawnTableForDepth(depth);
   if (table.length > 0) {
     const range = monsterCountForDepth(depth);
     const count = nextInt(state, range.min, range.max);
@@ -139,5 +172,27 @@ export function createLevel(rng: RngState, depth: number): LevelResult {
     }
   }
 
-  return { map, monsters, rng: state };
+  // Items may share a room with monsters but never a tile with anything else.
+  const items: Omit<Entity, "id">[] = [];
+  let nextItemId = firstItemId;
+  const itemTable = itemTableForDepth(depth);
+  if (itemTable.length > 0) {
+    const range = itemCountForDepth(depth);
+    const count = nextInt(state, range.min, range.max);
+    state = count.rng;
+    for (let i = 0; i < count.value; i++) {
+      const spot = randomRoomTile(state, map, taken, -1);
+      state = spot.rng;
+      if (spot.position === null) {
+        continue;
+      }
+      const def = pickWeighted(state, itemTable);
+      state = def.rng;
+      taken.add(pointKey(spot.position));
+      items.push(itemEntityFromDef(def.value, nextItemId, spot.position));
+      nextItemId++;
+    }
+  }
+
+  return { map, monsters, items, rng: state, nextItemId };
 }
