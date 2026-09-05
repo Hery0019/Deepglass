@@ -112,7 +112,7 @@ interrupts them. They refuse to start with a monster in view.
 Health regenerates one point every eight turns unless you are poisoned or weak
 with hunger. Nutrition drops by one every turn: below 300 you are hungry, below
 100 you are weak and stop healing, and at zero you starve, losing a point of
-health every four turns. A food ration restores 800. Resting is never free. Killing
+health every four turns. A food ration restores 1000. Resting is never free. Killing
 monsters grants experience; each character level adds health and damage, and
 every third level adds a point of defence.
 
