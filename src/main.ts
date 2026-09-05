@@ -4,13 +4,28 @@
  * in src/core/; drawing lives in src/render/ and src/ui/.
  */
 
-import { GRID_HEIGHT, GRID_WIDTH, type GameState, applyAction, createGame } from "./core/index";
+import {
+  GRID_HEIGHT,
+  GRID_WIDTH,
+  type GameState,
+  applyAction,
+  createGame,
+  getPlayer,
+} from "./core/index";
 import { type UiMode, keyToCommand } from "./input/keyboard";
 import { HUD_ROWS, type Renderer, createRenderer, render } from "./render/renderer";
 import { drawEndScreen } from "./ui/endscreen";
 import { drawHelp } from "./ui/help";
 import { drawHud } from "./ui/hud";
 import { drawInventory } from "./ui/inventory";
+
+/** Glyph cells never shrink below this, so small windows scroll instead of becoming unreadable. */
+const MIN_CELL_HEIGHT = 14;
+/** Width-to-height ratio of a monospace cell. */
+const CELL_ASPECT = 0.6;
+/** Zoom multipliers applied on top of the fit-to-window size; index 1 is the default. */
+const ZOOM_LEVELS: readonly number[] = [0.75, 1, 1.25, 1.5, 2, 2.5, 3];
+const DEFAULT_ZOOM_INDEX = 1;
 
 /**
  * Read the seed from `?seed=` if present, otherwise derive one from the
@@ -33,19 +48,32 @@ function resolveSeed(): number {
   return seed;
 }
 
-function computeCellSize(): { readonly width: number; readonly height: number } {
+/** Cell size that fits the whole grid in the window, scaled by the zoom level and floored at the minimum. */
+function computeCellSize(zoom: number): { readonly width: number; readonly height: number } {
   const totalRows = GRID_HEIGHT + HUD_ROWS;
-  const cellHeight = Math.max(10, Math.floor(window.innerHeight / totalRows));
-  const cellWidth = Math.max(
-    6,
-    Math.min(Math.floor(cellHeight * 0.6), Math.floor(window.innerWidth / GRID_WIDTH)),
+  const fitHeight = Math.min(
+    window.innerHeight / totalRows,
+    window.innerWidth / (GRID_WIDTH * CELL_ASPECT),
   );
-  return { width: cellWidth, height: Math.min(cellHeight, Math.floor(cellWidth / 0.6)) };
+  const height = Math.max(MIN_CELL_HEIGHT, Math.round(fitHeight * zoom));
+  return { width: Math.round(height * CELL_ASPECT), height };
 }
 
-function buildRenderer(canvas: HTMLCanvasElement): Renderer {
-  const cell = computeCellSize();
+function buildRenderer(canvas: HTMLCanvasElement, zoom: number): Renderer {
+  const cell = computeCellSize(zoom);
   return createRenderer(canvas, GRID_WIDTH, GRID_HEIGHT, cell.width, cell.height);
+}
+
+/** When the canvas is larger than the window, scroll so the player stays centred. */
+function scrollToPlayer(canvas: HTMLCanvasElement, renderer: Renderer, state: GameState): void {
+  if (canvas.width <= window.innerWidth && canvas.height <= window.innerHeight) {
+    return;
+  }
+  const player = getPlayer(state);
+  const { cellWidth, cellHeight } = renderer.metrics;
+  const x = canvas.offsetLeft + (player.position.x + 0.5) * cellWidth;
+  const y = canvas.offsetTop + (player.position.y + 0.5) * cellHeight;
+  window.scrollTo(x - window.innerWidth / 2, y - window.innerHeight / 2);
 }
 
 function main(): void {
@@ -56,7 +84,8 @@ function main(): void {
 
   let state: GameState = createGame(resolveSeed());
   let mode: UiMode = "play";
-  let renderer = buildRenderer(canvas);
+  let zoomIndex = DEFAULT_ZOOM_INDEX;
+  let renderer = buildRenderer(canvas, ZOOM_LEVELS[zoomIndex] ?? 1);
 
   const drawOverlay = (r: Renderer, s: GameState): void => {
     drawHud(r, s);
@@ -70,12 +99,15 @@ function main(): void {
 
   const draw = (): void => {
     render(renderer, state, drawOverlay);
+    scrollToPlayer(canvas, renderer, state);
   };
 
-  window.addEventListener("resize", () => {
-    renderer = buildRenderer(canvas);
+  const rebuild = (): void => {
+    renderer = buildRenderer(canvas, ZOOM_LEVELS[zoomIndex] ?? 1);
     draw();
-  });
+  };
+
+  window.addEventListener("resize", rebuild);
 
   window.addEventListener("keydown", (event) => {
     if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -87,7 +119,24 @@ function main(): void {
     }
     event.preventDefault();
     if (command.kind === "ui") {
-      mode = command.command.type === "open" ? command.command.mode : "play";
+      const ui = command.command;
+      switch (ui.type) {
+        case "open":
+          mode = ui.mode;
+          break;
+        case "close":
+          mode = "play";
+          break;
+        case "zoom":
+          if (ui.direction === "reset") {
+            zoomIndex = DEFAULT_ZOOM_INDEX;
+          } else {
+            const step = ui.direction === "in" ? 1 : -1;
+            zoomIndex = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, zoomIndex + step));
+          }
+          rebuild();
+          return;
+      }
     } else {
       const result = applyAction(state, command.action);
       state = result.state;

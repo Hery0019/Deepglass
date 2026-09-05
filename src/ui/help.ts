@@ -16,6 +16,8 @@ const KEY_MAP: readonly (readonly [string, string])[] = [
   ["i", "open your pack; press a letter to use or equip"],
   ["d", "drop an item; press a letter to choose"],
   ["?", "toggle this help"],
+  ["+ / -", "zoom in / out (the page scrolls to follow you)"],
+  ["0", "reset zoom"],
   ["Esc", "close any overlay"],
 ];
 
@@ -29,7 +31,7 @@ const LEGEND: readonly (readonly [string, string])[] = [
 ];
 
 export function drawHelp(renderer: Renderer): void {
-  const box = centredBox(renderer, 76, 26);
+  const box = centredBox(renderer, 76, 28);
   drawFrame(renderer, box, "Help");
   const left = box.col + 3;
   let row = box.row + 2;
