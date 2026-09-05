@@ -147,9 +147,15 @@ only. Press `n` or `Enter` there (or tap) to start a new run with a fresh seed.
 
 Every run is driven by a single 32-bit seed. The seed is shown in the status bar
 and written into the page URL as `?seed=12345`. Opening that URL starts the same
-dungeon with the same monsters and items; the same sequence of key presses
-produces the same run. To share a run, share the URL. To replay your own, reload
-it.
+dungeon with the same monsters and items.
+
+The URL also carries the run itself: every few seconds, and when the run ends,
+the actions taken so far are written into a `replay=` parameter as a short
+string (one character per step). Copy the address bar to share the run; opening
+that link plays it back action by action, any key skips to the end, and the
+result can be watched but not continued. Reloading your own game therefore
+replays it rather than resuming it; a link with only the seed starts afresh.
+Death stays permanent.
 
 ## Architecture
 
@@ -170,7 +176,7 @@ src/
   render/    reads state, draws it on the canvas, never mutates
   input/     keyboard events -> Action or UI command
   ui/        HUD, inventory, help, examine, message history, and end screens
-  client/    browser-side persistence (best runs in local storage)
+  client/    browser-side persistence (best runs in local storage, replay encoding)
   main.ts    wiring only
 tests/       Vitest suites for the core
 ```

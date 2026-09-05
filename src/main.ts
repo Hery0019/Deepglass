@@ -30,7 +30,9 @@ import {
   render,
   toGrid,
 } from "./render/renderer";
+import { decodeActions, encodeActions } from "./client/replay";
 import { insertRun, loadScores, recordFromState, saveScores } from "./client/scores";
+import { drawBanner } from "./ui/hud";
 import { drawEndScreen } from "./ui/endscreen";
 import { drawExamine, examineTargets, fireTargets } from "./ui/examine";
 import { drawHelp } from "./ui/help";
@@ -51,12 +53,17 @@ const ZOOM_LEVELS: readonly number[] = [0.75, 1, 1.25, 1.5, 2, 2.5, 3];
 const DEFAULT_ZOOM_INDEX = 1;
 /** Delay between steps of an automatic action (explore, travel, rest), so the run is visible. */
 const AUTO_STEP_MS = 30;
+/** Delay between actions when watching a replay. */
+const REPLAY_STEP_MS = 12;
+/** How often at most the URL is rewritten with the run so far; browsers throttle history updates. */
+const URL_UPDATE_MS = 3000;
 
 /**
  * Read the seed from `?seed=` if present, otherwise derive one from the
  * clock. Either way the URL is updated so the run can be shared or replayed.
+ * A `?replay=` parameter carries the actions of a run to watch.
  */
-function resolveSeed(): number {
+function resolveSeed(): { readonly seed: number; readonly replay: Action[] } {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get("seed");
   let seed: number | null = null;
@@ -66,11 +73,25 @@ function resolveSeed(): number {
       seed = parsed >>> 0;
     }
   }
+  const replay = seed === null ? [] : decodeActions(params.get("replay") ?? "");
   seed ??= Date.now() >>> 0;
   params.set("seed", String(seed));
-  const url = `${window.location.pathname}?${params.toString()}`;
-  window.history.replaceState(null, "", url);
-  return seed;
+  params.delete("replay");
+  window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  return { seed, replay };
+}
+
+/** Put the run so far into the URL so the address bar is always a shareable replay. */
+function writeReplayUrl(seed: number, actions: readonly Action[]): void {
+  const params = new URLSearchParams({ seed: String(seed) });
+  if (actions.length > 0) {
+    params.set("replay", encodeActions(actions));
+  }
+  try {
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  } catch {
+    // Some browsers throttle history updates; the next attempt will catch up.
+  }
 }
 
 /** Cell size that fits the whole grid in the window, scaled by the zoom level and floored at the minimum. */
@@ -101,7 +122,14 @@ function main(): void {
     throw new Error("Canvas element #game not found.");
   }
 
-  let state: GameState = createGame(resolveSeed());
+  const start = resolveSeed();
+  let state: GameState = createGame(start.seed);
+  /** Every action applied so far, in order: with the seed, the whole run. */
+  const actions: Action[] = [];
+  let urlDirty = false;
+  /** Set while a shared run is being replayed, and afterwards: replays are watched, not continued. */
+  let replaying = start.replay.length > 0;
+  const replayTotal = start.replay.length;
   let mode: UiMode = "play";
   let zoomIndex = DEFAULT_ZOOM_INDEX;
   let renderer = buildRenderer(canvas, ZOOM_LEVELS[zoomIndex] ?? 1);
@@ -127,6 +155,14 @@ function main(): void {
       drawMessageHistory(r, s, historyOffset);
     }
     drawEndScreen(r, s, scores);
+    if (replayTotal > 0) {
+      drawBanner(
+        r,
+        replaying
+          ? `Replay of seed ${String(start.seed)}: ${String(actions.length)}/${String(replayTotal)} actions. Any key skips to the end.`
+          : `Replay of seed ${String(start.seed)} finished. Press n for a new run.`,
+      );
+    }
     if (touch) {
       drawToolbar(r);
     }
@@ -148,11 +184,50 @@ function main(): void {
     const before = state;
     const result = applyAction(state, action);
     state = result.state;
+    actions.push(action);
+    urlDirty = true;
     if (before.status === "playing" && state.status !== "playing") {
-      scores = insertRun(scores, recordFromState(state, causeOfDeath(before, result), Date.now()));
-      saveScores(scores);
+      if (replayTotal === 0) {
+        scores = insertRun(
+          scores,
+          recordFromState(state, causeOfDeath(before, result), Date.now()),
+        );
+        saveScores(scores);
+      }
+      writeReplayUrl(start.seed, actions);
+      urlDirty = false;
     }
     return result;
+  };
+
+  window.setInterval(() => {
+    if (urlDirty) {
+      writeReplayUrl(start.seed, actions);
+      urlDirty = false;
+    }
+  }, URL_UPDATE_MS);
+
+  /** Play back the shared run one action at a time; `skip` finishes it at once. */
+  const runReplay = (skip: boolean): void => {
+    while (replaying && actions.length < start.replay.length) {
+      const next = start.replay[actions.length];
+      if (next === undefined) {
+        break;
+      }
+      step(next);
+      if (!skip) {
+        break;
+      }
+    }
+    if (actions.length >= start.replay.length) {
+      replaying = false;
+      draw();
+      return;
+    }
+    draw();
+    window.setTimeout(() => {
+      runReplay(false);
+    }, REPLAY_STEP_MS);
   };
 
   /** Start over with a fresh seed. */
@@ -284,6 +359,17 @@ function main(): void {
     if (event.ctrlKey || event.metaKey || event.altKey) {
       return;
     }
+    if (replaying) {
+      runReplay(true);
+      return;
+    }
+    if (replayTotal > 0) {
+      // A finished replay is watched, not continued.
+      if (event.key === "n" || event.key === "Enter") {
+        newRun();
+      }
+      return;
+    }
     if (autoTimer !== null) {
       // Any key interrupts an automatic run and is otherwise ignored.
       stopAuto();
@@ -308,7 +394,11 @@ function main(): void {
       stopAuto();
       return;
     }
-    if (state.status !== "playing") {
+    if (replaying) {
+      runReplay(true);
+      return;
+    }
+    if (state.status !== "playing" || replayTotal > 0) {
       newRun();
       return;
     }
@@ -334,6 +424,9 @@ function main(): void {
   });
 
   draw();
+  if (replaying) {
+    runReplay(false);
+  }
 }
 
 main();
