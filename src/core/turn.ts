@@ -349,6 +349,26 @@ function refreshPlayerVision(state: GameState): GameState {
   return { ...state, map: updateVisibility(state.map, player.position, PLAYER_SIGHT_RADIUS) };
 }
 
+/**
+ * What killed the player in a turn that ended the run: the killer's name,
+ * or the source of the final damage (poison, starvation, a trap).
+ */
+export function causeOfDeath(before: GameState, result: TurnResult): string | undefined {
+  if (result.state.status !== "dead") {
+    return undefined;
+  }
+  const death = result.events.find(
+    (e) => e.type === "entity-died" && e.entityId === before.playerId,
+  );
+  if (death?.type === "entity-died" && death.killerId !== undefined) {
+    return findEntity(before, death.killerId)?.name ?? "unknown";
+  }
+  const damage = [...result.events]
+    .reverse()
+    .find((e) => e.type === "entity-damaged" && e.entityId === before.playerId);
+  return damage?.type === "entity-damaged" ? damage.source : "unknown";
+}
+
 export function applyAction(state: GameState, action: Action): TurnResult {
   if (state.status !== "playing") {
     return { state, events: [] };

@@ -12,6 +12,7 @@ import {
   type Point,
   addPoints,
   applyAction,
+  causeOfDeath,
   entitiesAt,
   autoContinues,
   createGame,
@@ -29,6 +30,7 @@ import {
   render,
   toGrid,
 } from "./render/renderer";
+import { insertRun, loadScores, recordFromState, saveScores } from "./client/scores";
 import { drawEndScreen } from "./ui/endscreen";
 import { drawExamine, examineTargets, fireTargets } from "./ui/examine";
 import { drawHelp } from "./ui/help";
@@ -106,6 +108,7 @@ function main(): void {
   let cursor: Point = getPlayer(state).position;
   let historyOffset = 0;
   let autoTimer: number | null = null;
+  let scores = loadScores();
   // The toolbar appears once a finger touches the screen; mouse users keep the keys.
   let touch = window.matchMedia("(pointer: coarse)").matches;
 
@@ -123,7 +126,7 @@ function main(): void {
     } else if (mode === "messages") {
       drawMessageHistory(r, s, historyOffset);
     }
-    drawEndScreen(r, s);
+    drawEndScreen(r, s, scores);
     if (touch) {
       drawToolbar(r);
     }
@@ -140,6 +143,25 @@ function main(): void {
 
   window.addEventListener("resize", rebuild);
 
+  /** Apply an action, and when it ends the run, remember how the run went. */
+  const step = (action: Action): ReturnType<typeof applyAction> => {
+    const before = state;
+    const result = applyAction(state, action);
+    state = result.state;
+    if (before.status === "playing" && state.status !== "playing") {
+      scores = insertRun(scores, recordFromState(state, causeOfDeath(before, result), Date.now()));
+      saveScores(scores);
+    }
+    return result;
+  };
+
+  /** Start over with a fresh seed. */
+  const newRun = (): void => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("seed");
+    window.location.assign(url.toString());
+  };
+
   const stopAuto = (): void => {
     if (autoTimer !== null) {
       window.clearTimeout(autoTimer);
@@ -150,8 +172,7 @@ function main(): void {
   /** Apply `action` once, then keep applying it on a timer until the core says to stop. */
   const runAuto = (action: Action): void => {
     const before = state;
-    const result = applyAction(state, action);
-    state = result.state;
+    const result = step(action);
     draw();
     if (autoContinues(action, before, result)) {
       autoTimer = window.setTimeout(() => {
@@ -197,14 +218,14 @@ function main(): void {
     }
     if (command.kind === "fire-at-cursor") {
       const target = entitiesAt(state, cursor).find((e) => e.kind === "monster");
-      state = applyAction(state, { type: "fire", targetId: target?.id ?? -1 }).state;
+      step({ type: "fire", targetId: target?.id ?? -1 });
       mode = "play";
       draw();
       return true;
     }
     if (command.kind === "stairs") {
       if (isOnStairs(state)) {
-        state = applyAction(state, { type: "descend" }).state;
+        step({ type: "descend" });
         draw();
       } else {
         runAuto({ type: "travel-to-stairs" });
@@ -217,7 +238,7 @@ function main(): void {
         case "open":
           if (ui.mode === "target" && effectiveRanged(getPlayer(state)) === undefined) {
             // Say so at once instead of opening a cursor with nothing to shoot.
-            state = applyAction(state, { type: "fire", targetId: -1 }).state;
+            step({ type: "fire", targetId: -1 });
             break;
           }
           mode = ui.mode;
@@ -251,8 +272,7 @@ function main(): void {
           return true;
       }
     } else {
-      const result = applyAction(state, command.action);
-      state = result.state;
+      step(command.action);
       // Any action taken from an overlay closes it.
       mode = "play";
     }
@@ -270,6 +290,10 @@ function main(): void {
       event.preventDefault();
       return;
     }
+    if (state.status !== "playing" && (event.key === "n" || event.key === "Enter")) {
+      newRun();
+      return;
+    }
     if (handle(keyToCommand(event.key, mode))) {
       event.preventDefault();
     }
@@ -282,6 +306,10 @@ function main(): void {
     }
     if (autoTimer !== null) {
       stopAuto();
+      return;
+    }
+    if (state.status !== "playing") {
+      newRun();
       return;
     }
     const { cellWidth, cellHeight } = renderer.metrics;
