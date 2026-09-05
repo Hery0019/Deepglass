@@ -121,6 +121,8 @@ export type Entity = {
   readonly isBoss?: boolean;
   /** Experience awarded to the player for killing this entity. */
   readonly xpValue?: number;
+  /** Item left behind when this entity dies. */
+  readonly drop?: ItemId;
   readonly experience?: ExperienceComponent;
   readonly hunger?: HungerComponent;
   /** Sight radius for creatures that look for the player. */

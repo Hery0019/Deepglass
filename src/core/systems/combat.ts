@@ -6,7 +6,8 @@
  * (except the player, whose corpse stays for the death screen).
  */
 
-import { removeEntity, updateEntity } from "../entity";
+import { ITEMS } from "../data/items";
+import { removeEntity, spawnEntity, updateEntity } from "../entity";
 import { chebyshevDistance } from "../grid";
 import { isVisibleAt } from "../map/dungeon";
 import { type RngState, chance, nextInt } from "../rng";
@@ -67,6 +68,21 @@ export function resolveDeath(
     return { state: { ...state, status: "dead" }, events };
   }
   let next = removeEntity(state, victim.id);
+  if (victim.drop !== undefined) {
+    const def = ITEMS[victim.drop];
+    const item = { id: next.nextItemId, defId: def.id };
+    const dropped = spawnEntity(next, {
+      kind: "item",
+      name: def.name,
+      glyph: def.glyph,
+      color: def.color,
+      position: victim.position,
+      blocksMovement: false,
+      item,
+    });
+    next = { ...dropped.state, nextItemId: item.id + 1 };
+    events.push({ type: "item-dropped", entityId: victim.id, item });
+  }
   if (victim.isBoss === true) {
     next = { ...next, status: "won" };
     events.push({ type: "game-won" });

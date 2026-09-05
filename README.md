@@ -115,7 +115,8 @@ being a cavern: an open, irregular cave with no rooms or doors, where sight
 lines are long and there is nowhere to hold a corridor.
 
 Monsters (shallowest first): giant rat, cave bat, kobold, goblin archer, cave
-spider, orc, wraith, ogre, and the Warden on the final level. Behaviours differ:
+spider, orc, wraith, ogre, the Gatekeeper beside the stairs on depth 5, and the
+Warden on the final level. Behaviours differ:
 chasers close in; archers and wraiths keep their distance and shoot, backing away
 only every other turn so a persistent player can catch them; bats move
 erratically and can confuse you; spiders lie still until you step next to them
@@ -218,7 +219,9 @@ troll: {
 ```
 
 Optional fields: `ranged` (for `ranged` and `boss` behaviours),
-`preferredRange`, `erraticChance`, `fleeThreshold`, and `onHit`. The monster
+`preferredRange`, `erraticChance`, `fleeThreshold`, `onHit`, `guardsStairs`
+(placed next to the down staircase on each depth in range), and `drop` (an
+item left on the floor when the monster dies). The monster
 appears in the spawn table for every depth between `minDepth` and `maxDepth`,
 and gains one health per level below `minDepth` and one damage per three.
 
