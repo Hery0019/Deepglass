@@ -30,7 +30,8 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
     case "attack-hit": {
       const attacker = nameOf(before, event.attackerId);
       const defender = nameOf(before, event.defenderId);
-      const verb = event.attackerId === before.playerId ? "hit" : "hits";
+      const isPlayer = event.attackerId === before.playerId;
+      const verb = event.ranged ? (isPlayer ? "shoot" : "shoots") : isPlayer ? "hit" : "hits";
       return entry(
         `${capitalize(attacker)} ${verb} ${defender} for ${String(event.damage)}.`,
         event.defenderId === before.playerId ? "bad" : "combat",
@@ -39,7 +40,15 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
     case "attack-missed": {
       const attacker = nameOf(before, event.attackerId);
       const defender = nameOf(before, event.defenderId);
-      const verb = event.attackerId === before.playerId ? "miss" : "misses";
+      const isPlayer = event.attackerId === before.playerId;
+      if (event.ranged) {
+        const verb = isPlayer ? "shoot" : "shoots";
+        return entry(
+          `${capitalize(attacker)} ${verb} at ${defender} and ${isPlayer ? "miss" : "misses"}.`,
+          "combat",
+        );
+      }
+      const verb = isPlayer ? "miss" : "misses";
       return entry(`${capitalize(attacker)} ${verb} ${defender}.`, "combat");
     }
     case "entity-died": {

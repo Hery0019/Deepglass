@@ -108,7 +108,9 @@ describe("combat arithmetic", () => {
       throw new Error("monster missing");
     }
     const result = meleeAttack(state, monster, getPlayer(state));
-    expect(result.events).toEqual([{ type: "attack-missed", attackerId: 2, defenderId: 1 }]);
+    expect(result.events).toEqual([
+      { type: "attack-missed", attackerId: 2, defenderId: 1, ranged: false },
+    ]);
     expect(result.state.rng).not.toBe(state.rng);
     expect(getPlayer(result.state).health?.current).toBe(getPlayer(state).health?.current);
   });
