@@ -3,7 +3,7 @@
  * map. Reads state only.
  */
 
-import type { GameState, LogTone } from "../core/index";
+import type { GameState, LogEntry, LogTone } from "../core/index";
 import {
   ITEMS,
   STATUS_EFFECTS,
@@ -52,6 +52,11 @@ export function drawBanner(renderer: Renderer, text: string): void {
   renderer.context.fillStyle = PALETTE.hudFrame;
   renderer.context.fillRect(0, cellHeight, renderer.columns * cellWidth, cellHeight);
   drawText(renderer, 1, 1, text, PALETTE.hudText, renderer.columns - 2);
+}
+
+/** A log entry as shown: repeated lines carry their count. */
+export function logLine(entry: LogEntry): string {
+  return entry.count === undefined ? entry.text : `${entry.text} (x${String(entry.count)})`;
 }
 
 export function drawHud(renderer: Renderer, state: GameState): void {
@@ -112,6 +117,6 @@ export function drawHud(renderer: Renderer, state: GameState): void {
   recent.forEach((entry, i) => {
     const isRecent = entry.turn >= state.turn - 1;
     const color = isRecent ? toneColor(entry.tone) : PALETTE.hudDim;
-    drawText(renderer, 1, firstRow + i, entry.text, color, renderer.columns - 2);
+    drawText(renderer, 1, firstRow + i, logLine(entry), color, renderer.columns - 2);
   });
 }

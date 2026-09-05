@@ -117,6 +117,13 @@ export function describeEvent(before: GameState, event: GameEvent): LogEntry | n
         "good",
       );
     }
+    case "item-seen":
+      return event.count > 1
+        ? entry(
+            `You see ${String(event.count)} items here; a ${itemName(before, event.item)} is on top.`,
+            "info",
+          )
+        : entry(`You see a ${itemName(before, event.item)} here.`, "info");
     case "item-picked-up":
       return entry(`You pick up the ${itemName(before, event.item)}.`, "info");
     case "item-dropped": {

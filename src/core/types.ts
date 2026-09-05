@@ -140,9 +140,12 @@ export type Entity = {
 export type LogTone = "info" | "combat" | "good" | "bad" | "system";
 
 export type LogEntry = {
+  /** Turn of the latest occurrence. */
   readonly turn: number;
   readonly text: string;
   readonly tone: LogTone;
+  /** How many times in a row this exact line was logged; absent means once. */
+  readonly count?: number;
 };
 
 export type GameStatus = "playing" | "dead" | "won";
@@ -238,6 +241,8 @@ export type GameEvent =
     }
   | { readonly type: "entity-healed"; readonly entityId: EntityId; readonly amount: number }
   | { readonly type: "item-picked-up"; readonly entityId: EntityId; readonly item: Item }
+  /** The player stepped onto a tile holding items; `item` is the first of `count`. */
+  | { readonly type: "item-seen"; readonly item: Item; readonly count: number }
   | { readonly type: "item-dropped"; readonly entityId: EntityId; readonly item: Item }
   | { readonly type: "item-used"; readonly entityId: EntityId; readonly item: Item }
   /** Using an unknown kind of item revealed what it is. */

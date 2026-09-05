@@ -6,6 +6,7 @@
 import type { GameState, LogTone } from "../core/index";
 import { PALETTE } from "../render/palette";
 import { type Renderer, drawText } from "../render/renderer";
+import { logLine } from "./hud";
 import { centredBox, drawFrame } from "./overlay";
 
 const BOX_WIDTH = 78;
@@ -45,7 +46,14 @@ export function drawMessageHistory(renderer: Renderer, state: GameState, offset:
   entries.forEach((entry, i) => {
     const turn = `T${String(entry.turn)}`.padEnd(6);
     drawText(renderer, left, firstRow + i, turn, PALETTE.hudDim);
-    drawText(renderer, left + 6, firstRow + i, entry.text, toneColor(entry.tone), box.width - 9);
+    drawText(
+      renderer,
+      left + 6,
+      firstRow + i,
+      logLine(entry),
+      toneColor(entry.tone),
+      box.width - 9,
+    );
   });
   const hint =
     offset > 0
