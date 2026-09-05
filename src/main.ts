@@ -5,16 +5,23 @@
  */
 
 import {
+  type Action,
   GRID_HEIGHT,
   GRID_WIDTH,
   type GameState,
+  type Point,
+  addPoints,
   applyAction,
+  autoContinues,
   createGame,
   getPlayer,
+  inBounds,
+  isOnStairs,
 } from "./core/index";
 import { type UiMode, keyToCommand } from "./input/keyboard";
 import { HUD_ROWS, type Renderer, createRenderer, render } from "./render/renderer";
 import { drawEndScreen } from "./ui/endscreen";
+import { drawExamine, examineTargets } from "./ui/examine";
 import { drawHelp } from "./ui/help";
 import { drawHud } from "./ui/hud";
 import { drawInventory } from "./ui/inventory";
@@ -26,6 +33,8 @@ const CELL_ASPECT = 0.6;
 /** Zoom multipliers applied on top of the fit-to-window size; index 1 is the default. */
 const ZOOM_LEVELS: readonly number[] = [0.75, 1, 1.25, 1.5, 2, 2.5, 3];
 const DEFAULT_ZOOM_INDEX = 1;
+/** Delay between steps of an automatic action (explore, travel, rest), so the run is visible. */
+const AUTO_STEP_MS = 30;
 
 /**
  * Read the seed from `?seed=` if present, otherwise derive one from the
@@ -86,8 +95,13 @@ function main(): void {
   let mode: UiMode = "play";
   let zoomIndex = DEFAULT_ZOOM_INDEX;
   let renderer = buildRenderer(canvas, ZOOM_LEVELS[zoomIndex] ?? 1);
+  let cursor: Point = getPlayer(state).position;
+  let autoTimer: number | null = null;
 
   const drawOverlay = (r: Renderer, s: GameState): void => {
+    if (mode === "examine") {
+      drawExamine(r, s, cursor);
+    }
     drawHud(r, s);
     if (mode === "inventory" || mode === "drop") {
       drawInventory(r, s, mode === "drop");
@@ -109,8 +123,52 @@ function main(): void {
 
   window.addEventListener("resize", rebuild);
 
+  const stopAuto = (): void => {
+    if (autoTimer !== null) {
+      window.clearTimeout(autoTimer);
+      autoTimer = null;
+    }
+  };
+
+  /** Apply `action` once, then keep applying it on a timer until the core says to stop. */
+  const runAuto = (action: Action): void => {
+    const before = state;
+    const result = applyAction(state, action);
+    state = result.state;
+    draw();
+    if (autoContinues(action, before, result)) {
+      autoTimer = window.setTimeout(() => {
+        runAuto(action);
+      }, AUTO_STEP_MS);
+    } else {
+      autoTimer = null;
+    }
+  };
+
+  const moveCursor = (direction: Point): void => {
+    const next = addPoints(cursor, direction);
+    if (inBounds(next, state.map.width, state.map.height)) {
+      cursor = next;
+    }
+  };
+
+  const cycleCursor = (): void => {
+    const targets = examineTargets(state);
+    if (targets.length === 0) {
+      return;
+    }
+    const current = targets.findIndex((p) => p.x === cursor.x && p.y === cursor.y);
+    cursor = targets[(current + 1) % targets.length] ?? cursor;
+  };
+
   window.addEventListener("keydown", (event) => {
     if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+    if (autoTimer !== null) {
+      // Any key interrupts an automatic run and is otherwise ignored.
+      stopAuto();
+      event.preventDefault();
       return;
     }
     const command = keyToCommand(event.key, mode);
@@ -118,14 +176,36 @@ function main(): void {
       return;
     }
     event.preventDefault();
+    if (command.kind === "auto") {
+      runAuto(command.action);
+      return;
+    }
+    if (command.kind === "stairs") {
+      if (isOnStairs(state)) {
+        state = applyAction(state, { type: "descend" }).state;
+        draw();
+      } else {
+        runAuto({ type: "travel-to-stairs" });
+      }
+      return;
+    }
     if (command.kind === "ui") {
       const ui = command.command;
       switch (ui.type) {
         case "open":
           mode = ui.mode;
+          if (mode === "examine") {
+            cursor = getPlayer(state).position;
+          }
           break;
         case "close":
           mode = "play";
+          break;
+        case "cursor":
+          moveCursor(ui.direction);
+          break;
+        case "cursor-next":
+          cycleCursor();
           break;
         case "zoom":
           if (ui.direction === "reset") {

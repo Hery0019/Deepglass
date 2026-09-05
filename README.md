@@ -70,7 +70,10 @@ monster on the level one action in return.
 | Arrow keys, `h` `j` `k` `l` | Move west / south / north / east                                                  |
 | `y` `u` `b` `n`             | Move diagonally (north-west, north-east, south-west, south-east)                  |
 | `.` or `s`                  | Wait one turn                                                                     |
-| `>`                         | Descend the stairs when standing on `>`                                           |
+| `>`                         | Descend when standing on `>`; otherwise walk to the stairs if you have seen them  |
+| `o`                         | Explore: walk toward unseen tiles until a monster or item shows up                |
+| `r`                         | Rest until fully healed, or until a monster appears                               |
+| `x`                         | Examine: move a cursor over the map; `Tab` cycles visible monsters, `Esc` leaves  |
 | `g` or `,`                  | Pick up the item under you                                                        |
 | `i`                         | Open your pack, then press a slot letter (`a`–`j`) to use or equip                |
 | `d`                         | Drop an item: press `d`, then the slot letter                                     |
@@ -86,6 +89,11 @@ are drawn dimmed.
 The status bar shows health, level and experience, effective attack and defence,
 depth, turn, and the run's seed. The second line shows equipped gear and any
 active status effects with their remaining duration.
+
+Exploring, travelling to the stairs, and resting are automatic actions: they
+repeat one turn at a time and stop as soon as a monster comes into view, you
+take damage, you step onto an item, or there is nothing left to do. Any key
+interrupts them. They refuse to start with a monster in view.
 
 Health regenerates one point every eight turns unless you are poisoned. Killing
 monsters grants experience; each character level adds health and damage, and
@@ -123,7 +131,7 @@ src/
     types.ts           GameState, Entity, Action, GameEvent
     entity.ts          entity lookup and immutable updates
     map/               tile table, dungeon map, room-and-corridor generator
-    systems/           movement, combat, fov, pathfinding, ai, items, status, progression
+    systems/           movement, combat, fov, pathfinding, ai, items, status, progression, explore
     data/              monster, item, and status effect tables
     level.ts           builds a level: map plus monsters and items for a depth
     messages.ts        turns events into log text
@@ -131,7 +139,7 @@ src/
     index.ts           public API of the core
   render/    reads state, draws it on the canvas, never mutates
   input/     keyboard events -> Action or UI command
-  ui/        HUD, inventory, help, and end screens (drawn on the canvas)
+  ui/        HUD, inventory, help, examine, and end screens (drawn on the canvas)
   main.ts    wiring only
 tests/       Vitest suites for the core
 ```

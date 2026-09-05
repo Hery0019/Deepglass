@@ -156,7 +156,22 @@ export type Action =
   | { readonly type: "pick-up" }
   /** Use a consumable or toggle equipment in the given inventory slot. */
   | { readonly type: "use-item"; readonly slot: number }
-  | { readonly type: "drop-item"; readonly slot: number };
+  | { readonly type: "drop-item"; readonly slot: number }
+  /** One step toward the nearest unexplored tile. Repeated by the client. */
+  | { readonly type: "explore" }
+  /** One step toward the known down staircase. Repeated by the client. */
+  | { readonly type: "travel-to-stairs" }
+  /** Wait one turn to recover health. Repeated by the client. */
+  | { readonly type: "rest" };
+
+/** Why an automatic action (explore, travel, rest) could not start. */
+export type AutoRefusal =
+  | "monster-in-view"
+  | "nothing-to-explore"
+  | "stairs-unknown"
+  | "already-there"
+  | "full-health"
+  | "poisoned";
 
 /** Something that happened during a turn. Consumed by the renderer and message log. */
 export type GameEvent =
@@ -200,6 +215,7 @@ export type GameEvent =
   | { readonly type: "status-expired"; readonly entityId: EntityId; readonly status: StatusId }
   | { readonly type: "level-descended"; readonly depth: number }
   | { readonly type: "no-stairs-here" }
+  | { readonly type: "auto-refused"; readonly reason: AutoRefusal; readonly entityId?: EntityId }
   | { readonly type: "player-levelled-up"; readonly level: number }
   | { readonly type: "game-won" }
   | { readonly type: "message"; readonly text: string; readonly tone: LogTone };
