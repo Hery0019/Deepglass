@@ -103,7 +103,8 @@ every third level adds a point of defence.
 
 Monsters (shallowest first): giant rat, cave bat, kobold, goblin archer, cave
 spider, orc, wraith, ogre, and the Warden on the final level. Behaviours differ:
-chasers close in; archers and wraiths keep their distance and shoot; bats move
+chasers close in; archers and wraiths keep their distance and shoot, backing away
+only every other turn so a persistent player can catch them; bats move
 erratically and can confuse you; spiders lie still until you step next to them
 and poison on hit; kobolds run away when wounded, recover out of sight, and come
 back. Monsters pursue only while they can see you, then head for where they last
@@ -244,3 +245,21 @@ produces a byte-identical final state), map connectivity across 500 seeds, field
 of view against hand-built maps, combat arithmetic, status effects, AI
 behaviours, pathfinding, items, progression, and a full run from depth 1 to the
 boss kill. Run them with `npm run test`.
+
+### Balance testing
+
+`tools/bot.ts` is a scripted player that sees only what the player sees and
+plays through `applyAction` like a human would: it equips the best gear it
+finds, fights what it can see, drinks when low, rests when hurt, explores, and
+descends. `npm run balance` plays many seeds with it and prints a summary: win
+rate, deaths by depth, and deaths by killer.
+
+```sh
+npm run balance                              # 100 seeds, explore each level first
+npm run balance -- --seeds 40 --style dive   # take the stairs as soon as they are seen
+npm run balance -- --start 500               # a different batch of seeds
+```
+
+The bot is a cautious, unskilled player, so its numbers are a yardstick for
+comparing a change against the previous build, not a target. The test suite
+runs it on a handful of seeds to make sure it never gets stuck.
