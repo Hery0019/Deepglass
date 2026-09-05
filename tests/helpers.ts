@@ -8,6 +8,9 @@
 import type { Point } from "../src/core/grid";
 import type { DungeonMap } from "../src/core/map/dungeon";
 import type { TileType } from "../src/core/map/tiles";
+import { seedRng } from "../src/core/rng";
+import { createPlayer } from "../src/core/turn";
+import type { Entity, GameState } from "../src/core/types";
 
 export type AsciiMap = {
   readonly map: DungeonMap;
@@ -78,4 +81,31 @@ export function visibilityToStrings(map: DungeonMap, visible: ReadonlySet<number
     out.push(line);
   }
   return out;
+}
+
+/**
+ * Build a full GameState from string art. The player stands on '@'; extra
+ * entities are appended with ids starting at 2, in the order given.
+ */
+export function stateFromStrings(
+  rows: readonly string[],
+  extras: readonly Omit<Entity, "id">[] = [],
+  seed = 1,
+): GameState {
+  const { map, origin } = mapFromStrings(rows);
+  const player = createPlayer(origin);
+  const entities: Entity[] = [player, ...extras.map((e, i) => ({ ...e, id: 2 + i }))];
+  return {
+    seed,
+    rng: seedRng(seed),
+    turn: 0,
+    depth: 1,
+    map,
+    entities,
+    playerId: player.id,
+    nextEntityId: 2 + extras.length,
+    log: [],
+    status: "playing",
+    stats: { kills: 0 },
+  };
 }

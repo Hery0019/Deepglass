@@ -7,7 +7,7 @@
  * replaced and whose `explored` array is extended.
  */
 
-import { type Point, inBounds, toIndex } from "../grid";
+import { type Point, inBounds, lineBetween, toIndex } from "../grid";
 import { type DungeonMap, isOpaqueAt } from "../map/dungeon";
 
 /** Default sight radius for the player. */
@@ -116,4 +116,20 @@ export function updateVisibility(map: DungeonMap, origin: Point, radius: number)
     explored[index] = true;
   }
   return { ...map, visible, explored };
+}
+
+/**
+ * Straight-line visibility between two tiles: every intermediate tile on the
+ * Bresenham line must be transparent. Endpoints may be opaque. Used by
+ * monsters, which do not need a full shadowcast.
+ */
+export function hasLineOfSight(map: DungeonMap, from: Point, to: Point): boolean {
+  const line = lineBetween(from, to);
+  for (let i = 1; i < line.length - 1; i++) {
+    const p = line[i];
+    if (p !== undefined && isOpaqueAt(map, p)) {
+      return false;
+    }
+  }
+  return true;
 }

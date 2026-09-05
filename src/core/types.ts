@@ -18,6 +18,28 @@ export type HealthComponent = {
   readonly max: number;
 };
 
+export type AttackComponent = {
+  /** Inclusive damage range before the defender's defence is subtracted. */
+  readonly min: number;
+  readonly max: number;
+  /** Probability in [0, 1] that a swing connects. */
+  readonly accuracy: number;
+};
+
+/** How a monster decides what to do each turn. Implemented in systems/ai.ts. */
+export type AiBehaviour = "chaser";
+
+export type AiComponent = {
+  readonly behaviour: AiBehaviour;
+  /** Where the monster last saw the player; it heads there when it loses sight. */
+  readonly lastKnownPlayerPosition?: Point;
+};
+
+export type ExperienceComponent = {
+  readonly level: number;
+  readonly xp: number;
+};
+
 export type Entity = {
   readonly id: EntityId;
   readonly kind: EntityKind;
@@ -28,6 +50,14 @@ export type Entity = {
   /** Whether other creatures may not enter this entity's tile. */
   readonly blocksMovement: boolean;
   readonly health?: HealthComponent;
+  readonly attack?: AttackComponent;
+  readonly defence?: number;
+  readonly ai?: AiComponent;
+  /** Experience awarded to the player for killing this entity. */
+  readonly xpValue?: number;
+  readonly experience?: ExperienceComponent;
+  /** Sight radius for creatures that look for the player. */
+  readonly sightRadius?: number;
 };
 
 export type LogTone = "info" | "combat" | "good" | "bad" | "system";
@@ -40,6 +70,10 @@ export type LogEntry = {
 
 export type GameStatus = "playing" | "dead" | "won";
 
+export type RunStats = {
+  readonly kills: number;
+};
+
 export type GameState = {
   readonly seed: number;
   readonly rng: RngState;
@@ -51,6 +85,7 @@ export type GameState = {
   readonly nextEntityId: EntityId;
   readonly log: readonly LogEntry[];
   readonly status: GameStatus;
+  readonly stats: RunStats;
 };
 
 /** Something the player wants to do. Produced by the input layer. */
@@ -66,6 +101,14 @@ export type GameEvent =
       readonly to: Point;
     }
   | { readonly type: "entity-blocked"; readonly entityId: EntityId; readonly at: Point }
+  | {
+      readonly type: "attack-hit";
+      readonly attackerId: EntityId;
+      readonly defenderId: EntityId;
+      readonly damage: number;
+    }
+  | { readonly type: "attack-missed"; readonly attackerId: EntityId; readonly defenderId: EntityId }
+  | { readonly type: "entity-died"; readonly entityId: EntityId; readonly killerId?: EntityId }
   | { readonly type: "message"; readonly text: string; readonly tone: LogTone };
 
 export type TurnResult = {
