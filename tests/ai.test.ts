@@ -132,6 +132,21 @@ describe("ranged AI", () => {
     expect(result.events[0]?.type).toBe("entity-moved");
   });
 
+  it("stands and shoots on the turn after backing away, so it can be caught", () => {
+    const state = build(HALL, "goblin-archer", { x: 3, y: 1 });
+    const first = runMonsterTurn(state, monsterOf(state));
+    expect(monsterOf(first.state).position).toEqual({ x: 4, y: 1 });
+    // The player follows; the archer holds its ground this time and shoots.
+    const followed = movePlayer(first.state, { x: 2, y: 1 });
+    const second = runMonsterTurn(followed, monsterOf(followed));
+    expect(monsterOf(second.state).position).toEqual({ x: 4, y: 1 });
+    const shot = second.events.find((e) => e.type === "attack-hit" || e.type === "attack-missed");
+    expect(shot !== undefined && "ranged" in shot && shot.ranged).toBe(true);
+    // And backs away again on the turn after that.
+    const third = runMonsterTurn(second.state, monsterOf(second.state));
+    expect(monsterOf(third.state).position).toEqual({ x: 5, y: 1 });
+  });
+
   it("approaches when the player is beyond its range", () => {
     const rows = ["################", "#@.............#", "################"];
     const state = build(rows, "goblin-archer", { x: 9, y: 1 });

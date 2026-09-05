@@ -193,19 +193,28 @@ function ranged(state: GameState, monster: Entity): AiResult {
     return chaser(state, monster);
   }
   if (distance < preferred) {
-    const retreat = stepAway(seen, monster, player.position);
-    if (retreat.events.length > 0) {
-      return retreat;
+    // Back away only every other turn. A monster that retreated every time
+    // the player stepped closer could never be caught in a long corridor.
+    if (monster.ai?.backedOff !== true) {
+      const retreat = stepAway(seen, monster, player.position);
+      if (retreat.events.length > 0) {
+        return {
+          ...retreat,
+          state: setAi(retreat.state, monster.id, (ai) => ({ ...ai, backedOff: true })),
+        };
+      }
     }
-    // Cornered: fight with whatever is available.
+    const standing = setAi(seen, monster.id, (ai) => ({ ...ai, backedOff: false }));
+    // Hold ground, or cornered: fight with whatever is available.
     return isAdjacent(monster.position, player.position)
-      ? meleeAttack(seen, monster, player)
-      : rangedAttack(seen, monster, player);
+      ? meleeAttack(standing, monster, player)
+      : rangedAttack(standing, monster, player);
   }
+  const rested = setAi(seen, monster.id, (ai) => ({ ...ai, backedOff: false }));
   if (distance <= weapon.range) {
-    return rangedAttack(seen, monster, player);
+    return rangedAttack(rested, monster, player);
   }
-  return stepToward(seen, monster, player.position);
+  return stepToward(rested, monster, player.position);
 }
 
 /** Erratic: with `erraticChance` it wanders randomly; otherwise it behaves like a chaser. */
