@@ -38,7 +38,7 @@ const LEGEND: readonly (readonly [string, string])[] = [
 ];
 
 export function drawHelp(renderer: Renderer): void {
-  const box = centredBox(renderer, 76, 34);
+  const box = centredBox(renderer, 76, 36);
   drawFrame(renderer, box, "Help");
   const left = box.col + 3;
   let row = box.row + 2;
@@ -67,6 +67,24 @@ export function drawHelp(renderer: Renderer): void {
     row,
     "Reach depth 9 and defeat the Warden to win. Death is permanent.",
     PALETTE.hudText,
+    box.width - 6,
+  );
+  row++;
+  drawText(
+    renderer,
+    left,
+    row,
+    "Eat when hungry: you stop healing when weak and starve at zero.",
+    PALETTE.hudDim,
+    box.width - 6,
+  );
+  row++;
+  drawText(
+    renderer,
+    left,
+    row,
+    "Potions and scrolls are unknown until you try one of their kind.",
+    PALETTE.hudDim,
     box.width - 6,
   );
   row++;

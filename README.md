@@ -63,7 +63,8 @@ npm run typecheck  # tsc --noEmit
 
 ## How to play
 
-You are `@`. Walk into a monster to attack it. Every action you take gives every
+A title screen sums up the goal and the main keys; any key or tap starts the
+run. You are `@`. Walk into a monster to attack it. Every action you take gives every
 monster on the level one action in return.
 
 | Key                         | Effect                                                                           |

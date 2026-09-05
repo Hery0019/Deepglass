@@ -41,6 +41,7 @@ import { drawInventory, inventorySlotAt } from "./ui/inventory";
 import { type PointerCommand, tapToCommand } from "./input/pointer";
 import { TOOLBAR_ROW, drawToolbar, toolbarKeyAt } from "./ui/toolbar";
 import { drawMessageHistory, maxHistoryOffset } from "./ui/messages";
+import { drawTitle } from "./ui/title";
 
 /** Glyph cells never shrink below this; a small window shows a window onto the map instead. */
 const MIN_CELL_HEIGHT = 14;
@@ -129,6 +130,8 @@ function main(): void {
   let urlDirty = false;
   /** Set while a shared run is being replayed, and afterwards: replays are watched, not continued. */
   let replaying = start.replay.length > 0;
+  /** The title screen covers the map until the first key or tap; replays skip it. */
+  let title = !replaying;
   const replayTotal = start.replay.length;
   let mode: UiMode = "play";
   let zoomIndex = DEFAULT_ZOOM_INDEX;
@@ -168,6 +171,9 @@ function main(): void {
     }
     if (notice !== null) {
       drawBanner(r, notice);
+    }
+    if (title) {
+      drawTitle(r, start.seed);
     }
   };
 
@@ -386,6 +392,12 @@ function main(): void {
     if (event.ctrlKey || event.metaKey || event.altKey) {
       return;
     }
+    if (title) {
+      title = false;
+      event.preventDefault();
+      draw();
+      return;
+    }
     if (replaying) {
       runReplay(true);
       return;
@@ -422,6 +434,11 @@ function main(): void {
     if (event.pointerType === "touch" && !touch) {
       touch = true;
       draw();
+    }
+    if (title) {
+      title = false;
+      draw();
+      return;
     }
     if (autoTimer !== null) {
       stopAuto();

@@ -24,6 +24,31 @@ export function centredBox(renderer: Renderer, width: number, height: number): B
   };
 }
 
+/** Break text into lines no longer than `maxCols`, at spaces where possible. */
+export function wrapText(text: string, maxCols: number): string[] {
+  const width = Math.max(1, maxCols);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of text.split(" ")) {
+    if (current.length === 0) {
+      current = word;
+    } else if (current.length + 1 + word.length <= width) {
+      current = `${current} ${word}`;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+    while (current.length > width) {
+      lines.push(current.slice(0, width));
+      current = current.slice(width);
+    }
+  }
+  if (current.length > 0) {
+    lines.push(current);
+  }
+  return lines;
+}
+
 /** Fill a box with the background colour and draw a single-line frame around it. */
 export function drawFrame(renderer: Renderer, box: Box, title?: string): void {
   const { cellWidth, cellHeight } = renderer.metrics;
