@@ -77,6 +77,7 @@ monster on the level one action in return.
 | `g` or `,`                  | Pick up the item under you                                                        |
 | `i`                         | Open your pack, then press a slot letter (`a`–`j`) to use or equip                |
 | `d`                         | Drop an item: press `d`, then the slot letter                                     |
+| `m`                         | Message history; `Up` / `Down` or `PageUp` / `PageDown` scroll                    |
 | `?`                         | Toggle the help screen                                                            |
 | `+` / `-`                   | Zoom in / out; when the canvas outgrows the window the page scrolls to follow you |
 | `0`                         | Reset zoom                                                                        |
@@ -140,7 +141,7 @@ src/
     index.ts           public API of the core
   render/    reads state, draws it on the canvas, never mutates
   input/     keyboard events -> Action or UI command
-  ui/        HUD, inventory, help, examine, and end screens (drawn on the canvas)
+  ui/        HUD, inventory, help, examine, message history, and end screens
   main.ts    wiring only
 tests/       Vitest suites for the core
 ```
