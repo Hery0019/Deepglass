@@ -14,6 +14,7 @@ import { type RngState, pick, seedRng } from "./rng";
 import { runMonsterTurn } from "./systems/ai";
 import { meleeAttack } from "./systems/combat";
 import { PLAYER_SIGHT_RADIUS, updateVisibility } from "./systems/fov";
+import { HUNGER_MAX, HUNGER_START, hungerBlocksRegen, tickHunger } from "./systems/hunger";
 import { INVENTORY_CAPACITY, dropItem, pickUp, useItem } from "./systems/items";
 import {
   exploreStep,
@@ -62,6 +63,7 @@ export function createPlayer(position: Entity["position"]): Entity {
     },
     defence: PLAYER_BASE.defence,
     experience: { level: 1, xp: 0 },
+    hunger: { current: HUNGER_START, max: HUNGER_MAX },
     sightRadius: PLAYER_SIGHT_RADIUS,
     inventory: { items: [], capacity: INVENTORY_CAPACITY },
     equipment: {},
@@ -287,7 +289,7 @@ function regenerate(state: GameState): GameState {
   if (player.health === undefined || player.health.current >= player.health.max) {
     return state;
   }
-  if (player.statuses?.some((s) => s.id === "poison") === true) {
+  if (player.statuses?.some((s) => s.id === "poison") === true || hungerBlocksRegen(player)) {
     return state;
   }
   return updateEntity(state, player.id, (p) =>
@@ -326,6 +328,12 @@ export function applyAction(state: GameState, action: Action): TurnResult {
     const statusPhase = tickAllStatuses(next);
     next = statusPhase.state;
     events.push(...statusPhase.events);
+  }
+
+  if (next.status === "playing") {
+    const hungerPhase = tickHunger(next, next.playerId);
+    next = hungerPhase.state;
+    events.push(...hungerPhase.events);
   }
 
   if (next.status === "playing") {

@@ -12,6 +12,7 @@ import {
   equippedArmour,
   equippedWeapon,
   getPlayer,
+  hungerLevel,
 } from "../core/index";
 import { PALETTE } from "../render/palette";
 import { type Renderer, drawText } from "../render/renderer";
@@ -69,6 +70,18 @@ export function drawHud(renderer: Renderer, state: GameState): void {
   }`;
   drawText(renderer, 1, mapRows + 1, gear, PALETTE.hudDim);
   let col = gear.length + 3;
+  const hunger = hungerLevel(player);
+  if (hunger !== "fed") {
+    const label = hunger.charAt(0).toUpperCase() + hunger.slice(1);
+    drawText(
+      renderer,
+      col,
+      mapRows + 1,
+      label,
+      hunger === "hungry" ? PALETTE.logCombat : PALETTE.logBad,
+    );
+    col += label.length + 2;
+  }
   for (const status of player.statuses ?? []) {
     const def = STATUS_EFFECTS[status.id];
     const label = `${def.label} (${String(status.turnsLeft)})`;

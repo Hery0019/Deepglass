@@ -10,6 +10,7 @@ import { type RngState, nextInt } from "../rng";
 import type { AttackComponent, Entity, GameEvent, GameState, Item } from "../types";
 import { applyDamage, isDead, resolveDeath } from "./combat";
 import { hasLineOfSight } from "./fov";
+import { feed } from "./hunger";
 import { applyStatus, removeStatus } from "./status";
 
 export type ItemResult = {
@@ -209,6 +210,8 @@ function applyEffect(state: GameState, userId: number, def: ItemDef): EffectResu
     return { state, events: [] };
   }
   switch (effect.type) {
+    case "feed":
+      return feed(state, userId, effect.amount);
     case "heal": {
       let next = state;
       const events: GameEvent[] = [];

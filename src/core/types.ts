@@ -10,6 +10,7 @@ import type { ItemId } from "./data/items";
 import type { Point } from "./grid";
 import type { DungeonMap } from "./map/dungeon";
 import type { RngState } from "./rng";
+import type { HungerLevel } from "./systems/hunger";
 
 export type EntityId = number;
 
@@ -46,6 +47,12 @@ export type AiComponent = {
   readonly fleeing?: boolean;
   /** Set on the turn a ranged monster backed away, so it stands and shoots on the next. */
   readonly backedOff?: boolean;
+};
+
+/** Nutrition points; see systems/hunger.ts for what the thresholds mean. */
+export type HungerComponent = {
+  readonly current: number;
+  readonly max: number;
 };
 
 export type ExperienceComponent = {
@@ -108,6 +115,7 @@ export type Entity = {
   /** Experience awarded to the player for killing this entity. */
   readonly xpValue?: number;
   readonly experience?: ExperienceComponent;
+  readonly hunger?: HungerComponent;
   /** Sight radius for creatures that look for the player. */
   readonly sightRadius?: number;
   /** Present on floor items. */
@@ -215,6 +223,7 @@ export type GameEvent =
   | { readonly type: "nothing-here"; readonly entityId: EntityId }
   | { readonly type: "status-applied"; readonly entityId: EntityId; readonly status: StatusId }
   | { readonly type: "status-expired"; readonly entityId: EntityId; readonly status: StatusId }
+  | { readonly type: "hunger-changed"; readonly entityId: EntityId; readonly level: HungerLevel }
   | { readonly type: "level-descended"; readonly depth: number }
   | { readonly type: "no-stairs-here" }
   | { readonly type: "auto-refused"; readonly reason: AutoRefusal; readonly entityId?: EntityId }

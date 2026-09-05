@@ -27,6 +27,7 @@ import {
   fromIndex,
   getPlayer,
   hasStatus,
+  hungerLevel,
   isExploredAt,
   isOnStairs,
   isVisibleAt,
@@ -105,6 +106,34 @@ function worthPicking(player: Entity, item: Item): boolean {
     return worn === undefined || armourScore(item) > armourScore(worn);
   }
   return true;
+}
+
+/** First step toward the nearest seen item worth picking up, or null. */
+function stepToItem(state: GameState, player: Entity): Action | null {
+  const inventory = player.inventory ?? { items: [], capacity: 0 };
+  if (inventory.items.length >= inventory.capacity) {
+    return null;
+  }
+  const wanted = state.entities
+    .filter(
+      (e) =>
+        e.kind === "item" &&
+        e.item !== undefined &&
+        isExploredAt(state.map, e.position) &&
+        worthPicking(player, e.item),
+    )
+    .sort(
+      (a, b) =>
+        chebyshevDistance(a.position, player.position) -
+        chebyshevDistance(b.position, player.position),
+    );
+  for (const target of wanted.slice(0, 5)) {
+    const step = stepToward(state, target.position);
+    if (step !== null) {
+      return step;
+    }
+  }
+  return null;
 }
 
 function stepToward(state: GameState, goal: Point): Action | null {
@@ -276,8 +305,19 @@ export function chooseAction(state: GameState, memory: BotMemory, style: BotStyl
   if (hasStatus(player, "poison") && ratio < 0.5 && potion !== -1) {
     return keep({ type: "use-item", slot: potion });
   }
+  const hunger = hungerLevel(player);
+  const food = slotOf(player, (i) => ITEMS[i.defId].category === "food");
+  if (hunger !== "fed" && food !== -1) {
+    return keep({ type: "use-item", slot: food });
+  }
+  // Items lying on seen tiles do not move; fetch the nearest one worth carrying.
+  const fetch = stepToItem(state, player);
+  if (fetch !== null) {
+    return keep(fetch);
+  }
   const resting = (memory.resting && ratio < RESTED_ABOVE) || ratio < REST_BELOW;
-  if (resting && !hasStatus(player, "poison")) {
+  // Resting burns nutrition and does nothing while weak, so a hungry bot presses on.
+  if (resting && !hasStatus(player, "poison") && hunger === "fed") {
     return { action: { type: "wait" }, memory: { ...calm, resting: true } };
   }
   const action = exploreOrDescend(state, style);
