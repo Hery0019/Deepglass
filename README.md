@@ -3,7 +3,8 @@
 [![CI](https://github.com/Hery0019/Deepglass/actions/workflows/ci.yml/badge.svg)](https://github.com/Hery0019/Deepglass/actions/workflows/ci.yml)
 
 A turn-based ASCII roguelike for the desktop browser. Descend eight procedurally
-generated levels, reach the ninth, and kill the Warden of the Deepglass. Death is
+generated levels of rooms and caverns, reach the ninth, and kill the Warden of
+the Deepglass. Death is
 permanent: there is no saving and no continuing.
 
 The game is written in TypeScript with no runtime dependencies. Rendering is
@@ -109,6 +110,10 @@ every third level adds a point of defence.
 
 ### Content
 
+Levels between the first and the last have a roughly one in three chance of
+being a cavern: an open, irregular cave with no rooms or doors, where sight
+lines are long and there is nowhere to hold a corridor.
+
 Monsters (shallowest first): giant rat, cave bat, kobold, goblin archer, cave
 spider, orc, wraith, ogre, and the Warden on the final level. Behaviours differ:
 chasers close in; archers and wraiths keep their distance and shoot, backing away
@@ -141,7 +146,7 @@ src/
     grid.ts            coordinates, bounds, neighbours, distances, lines
     types.ts           GameState, Entity, Action, GameEvent
     entity.ts          entity lookup and immutable updates
-    map/               tile table, dungeon map, room-and-corridor generator with doors
+    map/               tile table, dungeon map, room-and-corridor and cavern generators
     systems/           movement, combat, fov, pathfinding, ai, items, status, hunger, traps, progression, explore
     data/              monster, item, trap, and status effect tables
     level.ts           builds a level: map plus monsters and items for a depth
