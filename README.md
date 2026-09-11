@@ -13,25 +13,29 @@ and runs without a browser.
 
 ## Screenshots
 
-All captures come from real runs of the build in this repository, driven by a
-scripted player through a headless browser. Seed 7 is a winning run; seed 20
-dies to the Warden.
+All captures come from real runs of the build in this repository: the balance
+bot's decisions for a seed are turned into key presses and fed to the game in a
+headless browser. Seed 2 is a winning run; seed 1 starves on depth 7.
 
-| Depth 1, turn 0 (`?seed=7`)                                                         | Help screen                                                         |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| ![The first room, lit by the player's field of view](docs/screenshots/01-start.png) | ![The help overlay listing every key](docs/screenshots/02-help.png) |
+| Title screen                                                          | Depth 1, turn 0 (`?seed=2`)                                                         |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| ![The title screen with the main keys](docs/screenshots/00-title.png) | ![The first room, lit by the player's field of view](docs/screenshots/01-start.png) |
 
-| First fight                                                           | Depth 5                                                            |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| ![Killing a cave bat with bare hands](docs/screenshots/03-combat.png) | ![Explored corridors shown dimmed](docs/screenshots/04-depth5.png) |
+| Help screen                                                         | First fight                                                                             |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| ![The help overlay listing every key](docs/screenshots/02-help.png) | ![Killing a giant rat after drinking an unknown potion](docs/screenshots/03-combat.png) |
 
-| Depth 9                                                        | Inventory                                                                           |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| ![Arriving on the final level](docs/screenshots/05-depth9.png) | ![A full pack with wielded and worn gear marked](docs/screenshots/06-inventory.png) |
+| A cavern level                                                                          | Depth 5                                                                      |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| ![An open cave with long sight lines and doors nowhere](docs/screenshots/04-cavern.png) | ![Rooms, doors, and a known trap on depth 5](docs/screenshots/05-depth5.png) |
 
-| Victory (seed 7)                                                                 | Death (seed 20)                                                        |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| ![The victory summary after killing the Warden](docs/screenshots/07-victory.png) | ![The death summary on the final level](docs/screenshots/08-death.png) |
+| Depth 9                                                        | Inventory                                                                                     |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| ![Arriving on the final level](docs/screenshots/06-depth9.png) | ![A full pack with wielded, worn, and readied gear marked](docs/screenshots/07-inventory.png) |
+
+| Victory (seed 2)                                                           | Death (seed 1)                                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| ![The victory summary with the best runs](docs/screenshots/08-victory.png) | ![Starving on depth 7, with the best runs listed](docs/screenshots/09-death.png) |
 
 ## Playing it
 
